@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="de">
 <head>
 <meta charset="UTF-8">
@@ -27,7 +28,28 @@ html, body {
 }
 .app { display: flex; flex-direction: column; height: 100vh; height: -webkit-fill-available; max-width: 600px; margin: 0 auto; }
 /* HEADER */
-.hdr { flex-shrink: 0; background: linear-gradient(180deg,#1a1208,var(--bg)); border-bottom: 1px solid var(--border); padding: calc(10px + var(--safe-top)) 14px 10px; }
+.hdr { flex-shrink: 0; background: linear-gradient(180deg,#1a1208,var(--bg)); border-bottom: 1px solid var(--border); padding: calc(10px + var(--safe-top)) 14px 10px; display: flex; align-items: flex-start; justify-content: space-between; }
+.hdr-text { flex: 1; }
+.hdr-save-btn { background: none; border: 1px solid var(--border); color: var(--text-dim); font-size: .8rem; padding: 6px 10px; cursor: pointer; font-family: 'Cinzel', serif; margin-top: 4px; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
+.hdr-save-btn:active { background: var(--surface2); }
+/* SAVES SHEET */
+.saves-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; display: flex; align-items: flex-end; justify-content: center; }
+.saves-sheet { background: var(--surface); border-top: 1px solid var(--border); width: 100%; max-width: 480px; max-height: 80vh; display: flex; flex-direction: column; }
+.saves-head { padding: 14px 16px 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.saves-head-title { font-family: 'Cinzel', serif; font-size: .85rem; color: var(--gold); letter-spacing: .08em; }
+.saves-close { background: none; border: none; color: var(--text-dim); font-size: 1.1rem; cursor: pointer; padding: 2px 6px; }
+.saves-new { display: flex; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.saves-new input { flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 10px; font-family: 'Crimson Pro', serif; font-size: .9rem; outline: none; border-radius: 0; }
+.saves-new-btn { background: none; border: 1px solid var(--gold-dim); color: var(--gold); font-family: 'Cinzel', serif; font-size: .72rem; padding: 8px 12px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.saves-new-btn:active { background: rgba(201,146,42,.1); }
+.saves-list { overflow-y: auto; padding: 6px 0; }
+.save-item { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid rgba(58,46,34,.3); }
+.save-item-name { flex: 1; font-size: .9rem; color: var(--text-bright); }
+.save-item-date { font-size: .65rem; color: var(--text-dim); }
+.save-item-btns { display: flex; gap: 6px; }
+.save-load-btn { background: none; border: 1px solid var(--border); color: var(--text-dim); font-size: .7rem; font-family: 'Cinzel', serif; padding: 5px 9px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.save-load-btn:active { background: var(--surface2); }
+.save-del-btn { background: none; border: none; color: var(--border-hi); font-size: .9rem; padding: 4px 6px; cursor: pointer; }
 .hdr h1 { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--gold-light); letter-spacing: .08em; text-shadow: 0 0 20px rgba(201,146,42,.5); }
 .hdr .sub { font-size: .72rem; color: var(--text-dim); font-style: italic; }
 /* TAB BAR */
@@ -267,8 +289,11 @@ html, body {
 <body>
 <div class="app">
   <div class="hdr">
-    <h1>⚔️ MH WILDS · BUILD PLANNER</h1>
-    <div class="sub">Sword &amp; Shield · Annariel · HR 136</div>
+    <div class="hdr-text">
+      <h1>⚔️ MH WILDS · BUILD PLANNER</h1>
+      <div class="sub">Sword &amp; Shield · Annariel · HR 136</div>
+    </div>
+    <button class="hdr-save-btn" onclick="openSaves()">💾 Builds</button>
   </div>
 
   <div class="tab-bar">
@@ -281,240 +306,243 @@ html, body {
 
   <div class="content">
 
-    <!-- ══ SUCHE ══ -->
-    <div id="panel-search" class="panel vis">
-      <div class="p-head">
-        <h2 id="search-title">Rüstung durchsuchen</h2>
-        <input id="search-input" class="search-input" placeholder="Name eingeben…"
-          oninput="applyFilters()" autocomplete="off" autocorrect="off" spellcheck="false">
-        <!-- Slot / Waffe Tabs -->
-        <div class="slot-filters" id="slot-type-row">
-          <button class="sf-btn on" onclick="setSlotFilter(null,this)">Alle</button>
-          <button class="sf-btn" onclick="setSlotFilter('head',this)">🪖 Kopf</button>
-          <button class="sf-btn" onclick="setSlotFilter('chest',this)">🥻 Brust</button>
-          <button class="sf-btn" onclick="setSlotFilter('gloves',this)">🧤 Arme</button>
-          <button class="sf-btn" onclick="setSlotFilter('waist',this)">🩱 Taille</button>
-          <button class="sf-btn" onclick="setSlotFilter('legs',this)">🥾 Beine</button>
-          <button class="sf-btn" id="weapon-filter-btn" onclick="setWeaponMode(this)">⚔️ Waffe</button>
-        </div>
-        <!-- Rarität -->
-        <div class="filter-row">
-          <span class="filter-label">R</span>
-          <div class="rarity-filters" id="rarity-filter-row">
-            <button class="rarity-btn off" data-r="1" onclick="toggleRarity(1,this)">1</button>
-            <button class="rarity-btn off" data-r="2" onclick="toggleRarity(2,this)">2</button>
-            <button class="rarity-btn off" data-r="3" onclick="toggleRarity(3,this)">3</button>
-            <button class="rarity-btn off" data-r="4" onclick="toggleRarity(4,this)">4</button>
-            <button class="rarity-btn on"  data-r="5" onclick="toggleRarity(5,this)">5</button>
-            <button class="rarity-btn on"  data-r="6" onclick="toggleRarity(6,this)">6</button>
-            <button class="rarity-btn on"  data-r="7" onclick="toggleRarity(7,this)">7</button>
-            <button class="rarity-btn on"  data-r="8" onclick="toggleRarity(8,this)">8</button>
-          </div>
-        </div>
-        <!-- Armor-only filters -->
-        <div class="filter-row" id="armor-filters">
-          <span class="filter-label">Skill</span>
-          <select class="filter-select" id="filter-skill" onchange="applyFilters()">
-            <option value="">Alle</option>
-          </select>
-          <span class="filter-label" style="margin-left:4px">Slots</span>
-          <select class="filter-select" id="filter-slots" onchange="applyFilters()">
-            <option value="0">Alle</option>
-            <option value="1">≥①</option>
-            <option value="2">≥②</option>
-            <option value="3">≥③</option>
-          </select>
-        </div>
-        <!-- Weapon type grid (visible in weapon mode) -->
-        <div id="weapon-type-grid" class="weapon-type-grid" style="display:none">
-          <button class="wt-btn on"  data-wt="sword-shield"   onclick="setWeaponType('sword-shield',this)">⚔️<br>SnS</button>
-          <button class="wt-btn"     data-wt="dual-blades"    onclick="setWeaponType('dual-blades',this)">🗡️<br>DB</button>
-          <button class="wt-btn"     data-wt="great-sword"    onclick="setWeaponType('great-sword',this)">🗡️<br>GS</button>
-          <button class="wt-btn"     data-wt="long-sword"     onclick="setWeaponType('long-sword',this)">⚔️<br>LS</button>
-          <button class="wt-btn"     data-wt="hammer"         onclick="setWeaponType('hammer',this)">🔨<br>Ham</button>
-          <button class="wt-btn"     data-wt="hunting-horn"   onclick="setWeaponType('hunting-horn',this)">🎺<br>HH</button>
-          <button class="wt-btn"     data-wt="lance"          onclick="setWeaponType('lance',this)">🏹<br>Lnc</button>
-          <button class="wt-btn"     data-wt="gunlance"       onclick="setWeaponType('gunlance',this)">💥<br>GL</button>
-          <button class="wt-btn"     data-wt="switch-axe"     onclick="setWeaponType('switch-axe',this)">🪓<br>SA</button>
-          <button class="wt-btn"     data-wt="charge-blade"   onclick="setWeaponType('charge-blade',this)">⚡<br>CB</button>
-          <button class="wt-btn"     data-wt="insect-glaive"  onclick="setWeaponType('insect-glaive',this)">🦋<br>IG</button>
-          <button class="wt-btn"     data-wt="light-bowgun"   onclick="setWeaponType('light-bowgun',this)">🔫<br>LBG</button>
-          <button class="wt-btn"     data-wt="heavy-bowgun"   onclick="setWeaponType('heavy-bowgun',this)">💣<br>HBG</button>
-          <button class="wt-btn"     data-wt="bow"            onclick="setWeaponType('bow',this)">🏹<br>Bow</button>
-        </div>
-        <!-- Weapon-only filters -->
-        <div class="filter-row" id="weapon-filters" style="display:none">
-          <span class="filter-label">Elem</span>
-          <select class="filter-select" id="filter-element" onchange="applyFilters()">
-            <option value="">Alle</option>
-            <option value="fire">🔥 Feuer</option>
-            <option value="water">💧 Wasser</option>
-            <option value="thunder">⚡ Donner</option>
-            <option value="ice">❄️ Eis</option>
-            <option value="dragon">🐉 Drachen</option>
-            <option value="none">— Kein</option>
-          </select>
-          <span class="filter-label" style="margin-left:4px">Aff</span>
-          <select class="filter-select" id="filter-affinity" onchange="applyFilters()">
-            <option value="-999">Alle</option>
-            <option value="0">≥0%</option>
-            <option value="10">≥10%</option>
-            <option value="20">≥20%</option>
-            <option value="25">≥25%</option>
-          </select>
-        </div>
-        <!-- Sort -->
-        <div class="filter-row">
-          <span class="filter-label">Sort</span>
-          <button class="sort-btn on" id="sort-name" onclick="setSort('name',this)">Name</button>
-          <button class="sort-btn" id="sort-stat" onclick="setSort('stat',this)">DEF ↓</button>
-          <button class="sort-btn" id="sort-rarity" onclick="setSort('rarity',this)">Rarität ↓</button>
-        </div>
-      </div>
-      <div id="armor-hint" class="hint" style="display:none"></div>
-      <div id="armor-list"></div>
+```
+<!-- ══ SUCHE ══ -->
+<div id="panel-search" class="panel vis">
+  <div class="p-head">
+    <h2 id="search-title">Rüstung durchsuchen</h2>
+    <input id="search-input" class="search-input" placeholder="Name eingeben…"
+      oninput="applyFilters()" autocomplete="off" autocorrect="off" spellcheck="false">
+    <!-- Slot / Waffe Tabs -->
+    <div class="slot-filters" id="slot-type-row">
+      <button class="sf-btn on" onclick="setSlotFilter(null,this)">Alle</button>
+      <button class="sf-btn" onclick="setSlotFilter('head',this)">🪖 Kopf</button>
+      <button class="sf-btn" onclick="setSlotFilter('chest',this)">🥻 Brust</button>
+      <button class="sf-btn" onclick="setSlotFilter('gloves',this)">🧤 Arme</button>
+      <button class="sf-btn" onclick="setSlotFilter('waist',this)">🩱 Taille</button>
+      <button class="sf-btn" onclick="setSlotFilter('legs',this)">🥾 Beine</button>
+      <button class="sf-btn" id="weapon-filter-btn" onclick="setWeaponMode(this)">⚔️ Waffe</button>
     </div>
-
-    <!-- ══ BUILD ══ -->
-    <div id="panel-build" class="panel">
-      <!-- Waffen -->
-      <div class="build-section-label" style="border-top:none;padding-top:10px">Waffen</div>
-      <div class="build-slots" style="padding-bottom:0">
-        <div class="build-slot weapon-slot" id="slot-weapon">
-          <div class="build-slot-top" onclick="pickWeapon('primary')">
-            <div class="slot-label"><span>⚔️</span><span>Haupt</span></div>
-            <div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div>
-            <div class="slot-right"></div>
-          </div>
-        </div>
-        <div class="weapon-swap-row">
-          <button class="weapon-swap-btn" onclick="swapWeapons()">⇅ Tauschen</button>
-        </div>
-        <div class="build-slot weapon-slot secondary-weapon-slot" id="slot-weapon2">
-          <div class="build-slot-top" onclick="pickWeapon('secondary')">
-            <div class="slot-label"><span>⚔️</span><span>Sekundär</span></div>
-            <div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div>
-            <div class="slot-right"></div>
-          </div>
-        </div>
-      </div>
-      <div class="build-section-label" style="border-top:none;padding-top:4px">Rüstung</div>
-      <div class="build-slots" id="build-slots" style="padding-top:4px">
-        <!-- Rüstung -->
-        <div class="build-slot" id="slot-head">
-          <div class="build-slot-top" onclick="pickSlot('head')"><div class="slot-label"><span>🪖</span><span>Kopf</span></div><div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div><div class="slot-right"></div></div>
-          <div class="upgrade-row" id="upg-head" style="display:none"></div>
-        </div>
-        <div class="build-slot" id="slot-chest">
-          <div class="build-slot-top" onclick="pickSlot('chest')"><div class="slot-label"><span>🥻</span><span>Brust</span></div><div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div><div class="slot-right"></div></div>
-          <div class="upgrade-row" id="upg-chest" style="display:none"></div>
-        </div>
-        <div class="build-slot" id="slot-gloves">
-          <div class="build-slot-top" onclick="pickSlot('gloves')"><div class="slot-label"><span>🧤</span><span>Arme</span></div><div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div><div class="slot-right"></div></div>
-          <div class="upgrade-row" id="upg-gloves" style="display:none"></div>
-        </div>
-        <div class="build-slot" id="slot-waist">
-          <div class="build-slot-top" onclick="pickSlot('waist')"><div class="slot-label"><span>🩱</span><span>Taille</span></div><div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div><div class="slot-right"></div></div>
-          <div class="upgrade-row" id="upg-waist" style="display:none"></div>
-        </div>
-        <div class="build-slot" id="slot-legs">
-          <div class="build-slot-top" onclick="pickSlot('legs')"><div class="slot-label"><span>🥾</span><span>Beine</span></div><div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div><div class="slot-right"></div></div>
-          <div class="upgrade-row" id="upg-legs" style="display:none"></div>
-        </div>
-      </div>
-
-      <!-- Talisman -->
-      <div class="build-section-label">Talisman</div>
-      <div class="build-slots" style="padding-top:4px">
-        <div class="build-slot talisman-slot" id="slot-talisman">
-          <div class="build-slot-top" onclick="switchTab('talisman')">
-            <div class="slot-label"><span>🔮</span><span>Talisman</span></div>
-            <div class="slot-content" id="talisman-display"><div class="slot-empty">— Tippen zum Eingeben —</div></div>
-            <div class="slot-right" id="talisman-right"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Mäntel -->
-      <div class="build-section-label">Spezialwerkzeug</div>
-      <div class="build-slots" style="padding-top:4px">
-        <div class="build-slot mantle-slot" id="slot-mantle1">
-          <div class="build-slot-top" onclick="pickMantle(1)">
-            <div class="slot-label"><span>🧣</span><span>Mantel 1</span></div>
-            <div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div>
-            <div class="slot-right"></div>
-          </div>
-        </div>
-        <div class="build-slot mantle-slot" id="slot-mantle2">
-          <div class="build-slot-top" onclick="pickMantle(2)">
-            <div class="slot-label"><span>🧣</span><span>Mantel 2</span></div>
-            <div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div>
-            <div class="slot-right"></div>
-          </div>
-        </div>
-      </div>
-
-      <div id="build-summary" style="margin-top:8px"></div>
-      <div id="build-empty" class="empty" style="display:none"></div>
-    </div>
-
-    <!-- ══ DECOS ══ -->
-    <div id="panel-decos" class="panel">
-      <div class="p-head"><h2>Dekorationen einsetzen</h2></div>
-      <div id="decos-content"><div class="empty">Lege zuerst Rüstungsteile an.</div></div>
-    </div>
-
-    <!-- ══ TALISMAN EDITOR ══ -->
-    <div id="panel-talisman" class="panel">
-      <div class="p-head"><h2>Talisman bearbeiten</h2></div>
-      <div style="padding:12px">
-        <div class="talisman-edit">
-          <h3>Skills</h3>
-          <div class="tali-skill-row">
-            <select id="tali-skill1"><option value="">— Skill 1 —</option></select>
-            <input id="tali-level1" type="number" min="1" max="5" value="1" placeholder="Lv">
-          </div>
-          <div class="tali-skill-row">
-            <select id="tali-skill2"><option value="">— Skill 2 —</option></select>
-            <input id="tali-level2" type="number" min="1" max="5" value="1" placeholder="Lv">
-          </div>
-          <div class="tali-slot-row">
-            <label>Slots:</label>
-            <select class="tali-slot-select" id="tali-slot1"><option value="0">—</option><option value="1">①</option><option value="2">②</option><option value="3">③</option><option value="4">④</option></select>
-            <select class="tali-slot-select" id="tali-slot2"><option value="0">—</option><option value="1">①</option><option value="2">②</option><option value="3">③</option></select>
-            <select class="tali-slot-select" id="tali-slot3"><option value="0">—</option><option value="1">①</option><option value="2">②</option><option value="3">③</option></select>
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <button onclick="saveTalisman()" style="flex:1;padding:10px;background:var(--gold-dim);border:1px solid var(--gold);color:var(--text-bright);font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.08em;cursor:pointer;">SPEICHERN</button>
-          <button onclick="clearTalisman()" style="flex:1;padding:10px;background:none;border:1px solid var(--border);color:var(--text-dim);font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.08em;cursor:pointer;">LÖSCHEN</button>
-        </div>
+    <!-- Rarität -->
+    <div class="filter-row">
+      <span class="filter-label">R</span>
+      <div class="rarity-filters" id="rarity-filter-row">
+        <button class="rarity-btn off" data-r="1" onclick="toggleRarity(1,this)">1</button>
+        <button class="rarity-btn off" data-r="2" onclick="toggleRarity(2,this)">2</button>
+        <button class="rarity-btn off" data-r="3" onclick="toggleRarity(3,this)">3</button>
+        <button class="rarity-btn off" data-r="4" onclick="toggleRarity(4,this)">4</button>
+        <button class="rarity-btn on"  data-r="5" onclick="toggleRarity(5,this)">5</button>
+        <button class="rarity-btn on"  data-r="6" onclick="toggleRarity(6,this)">6</button>
+        <button class="rarity-btn on"  data-r="7" onclick="toggleRarity(7,this)">7</button>
+        <button class="rarity-btn on"  data-r="8" onclick="toggleRarity(8,this)">8</button>
       </div>
     </div>
-
-    <!-- ══ MANTLE PICKER ══ -->
-    <div id="panel-mantle" class="panel">
-      <div class="p-head"><h2 id="mantle-pick-title">Mantel wählen</h2></div>
-      <div id="mantle-list" class="mantle-list"></div>
+    <!-- Armor-only filters -->
+    <div class="filter-row" id="armor-filters">
+      <span class="filter-label">Skill</span>
+      <select class="filter-select" id="filter-skill" onchange="applyFilters()">
+        <option value="">Alle</option>
+      </select>
+      <span class="filter-label" style="margin-left:4px">Slots</span>
+      <select class="filter-select" id="filter-slots" onchange="applyFilters()">
+        <option value="0">Alle</option>
+        <option value="1">≥①</option>
+        <option value="2">≥②</option>
+        <option value="3">≥③</option>
+      </select>
     </div>
-
-    <!-- ══ SKILLS ══ -->
-    <div id="panel-skills" class="panel">
-      <div class="p-head"><h2>Aktive Skills</h2></div>
-      <div id="skills-list"><div class="empty">Noch keine Rüstung angelegt.</div></div>
-      <div id="set-bonus-list"></div>
+    <!-- Weapon type grid (visible in weapon mode) -->
+    <div id="weapon-type-grid" class="weapon-type-grid" style="display:none">
+      <button class="wt-btn on"  data-wt="sword-shield"   onclick="setWeaponType('sword-shield',this)">⚔️<br>SnS</button>
+      <button class="wt-btn"     data-wt="dual-blades"    onclick="setWeaponType('dual-blades',this)">🗡️<br>DB</button>
+      <button class="wt-btn"     data-wt="great-sword"    onclick="setWeaponType('great-sword',this)">🗡️<br>GS</button>
+      <button class="wt-btn"     data-wt="long-sword"     onclick="setWeaponType('long-sword',this)">⚔️<br>LS</button>
+      <button class="wt-btn"     data-wt="hammer"         onclick="setWeaponType('hammer',this)">🔨<br>Ham</button>
+      <button class="wt-btn"     data-wt="hunting-horn"   onclick="setWeaponType('hunting-horn',this)">🎺<br>HH</button>
+      <button class="wt-btn"     data-wt="lance"          onclick="setWeaponType('lance',this)">🏹<br>Lnc</button>
+      <button class="wt-btn"     data-wt="gunlance"       onclick="setWeaponType('gunlance',this)">💥<br>GL</button>
+      <button class="wt-btn"     data-wt="switch-axe"     onclick="setWeaponType('switch-axe',this)">🪓<br>SA</button>
+      <button class="wt-btn"     data-wt="charge-blade"   onclick="setWeaponType('charge-blade',this)">⚡<br>CB</button>
+      <button class="wt-btn"     data-wt="insect-glaive"  onclick="setWeaponType('insect-glaive',this)">🦋<br>IG</button>
+      <button class="wt-btn"     data-wt="light-bowgun"   onclick="setWeaponType('light-bowgun',this)">🔫<br>LBG</button>
+      <button class="wt-btn"     data-wt="heavy-bowgun"   onclick="setWeaponType('heavy-bowgun',this)">💣<br>HBG</button>
+      <button class="wt-btn"     data-wt="bow"            onclick="setWeaponType('bow',this)">🏹<br>Bow</button>
     </div>
-
-    <!-- ══ BUILD OVERVIEW ══ -->
-    <div id="panel-overview" class="panel">
-      <div class="p-head"><h2>Build</h2></div>
-      <div id="overview-content"><div class="empty">Noch kein Build angelegt.</div></div>
+    <!-- Weapon-only filters -->
+    <div class="filter-row" id="weapon-filters" style="display:none">
+      <span class="filter-label">Elem</span>
+      <select class="filter-select" id="filter-element" onchange="applyFilters()">
+        <option value="">Alle</option>
+        <option value="fire">🔥 Feuer</option>
+        <option value="water">💧 Wasser</option>
+        <option value="thunder">⚡ Donner</option>
+        <option value="ice">❄️ Eis</option>
+        <option value="dragon">🐉 Drachen</option>
+        <option value="none">— Kein</option>
+      </select>
+      <span class="filter-label" style="margin-left:4px">Aff</span>
+      <select class="filter-select" id="filter-affinity" onchange="applyFilters()">
+        <option value="-999">Alle</option>
+        <option value="0">≥0%</option>
+        <option value="10">≥10%</option>
+        <option value="20">≥20%</option>
+        <option value="25">≥25%</option>
+      </select>
     </div>
+    <!-- Sort -->
+    <div class="filter-row">
+      <span class="filter-label">Sort</span>
+      <button class="sort-btn on" id="sort-name" onclick="setSort('name',this)">Name</button>
+      <button class="sort-btn" id="sort-stat" onclick="setSort('stat',this)">DEF ↓</button>
+      <button class="sort-btn" id="sort-rarity" onclick="setSort('rarity',this)">Rarität ↓</button>
+    </div>
+  </div>
+  <div id="armor-hint" class="hint" style="display:none"></div>
+  <div id="armor-list"></div>
+</div>
+
+<!-- ══ BUILD ══ -->
+<div id="panel-build" class="panel">
+  <!-- Waffen -->
+  <div class="build-section-label" style="border-top:none;padding-top:10px">Waffen</div>
+  <div class="build-slots" style="padding-bottom:0">
+    <div class="build-slot weapon-slot" id="slot-weapon">
+      <div class="build-slot-top" onclick="pickWeapon('primary')">
+        <div class="slot-label"><span>⚔️</span><span>Haupt</span></div>
+        <div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div>
+        <div class="slot-right"></div>
+      </div>
+    </div>
+    <div class="weapon-swap-row">
+      <button class="weapon-swap-btn" onclick="swapWeapons()">⇅ Tauschen</button>
+    </div>
+    <div class="build-slot weapon-slot secondary-weapon-slot" id="slot-weapon2">
+      <div class="build-slot-top" onclick="pickWeapon('secondary')">
+        <div class="slot-label"><span>⚔️</span><span>Sekundär</span></div>
+        <div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div>
+        <div class="slot-right"></div>
+      </div>
+    </div>
+  </div>
+  <div class="build-section-label" style="border-top:none;padding-top:4px">Rüstung</div>
+  <div class="build-slots" id="build-slots" style="padding-top:4px">
+    <!-- Rüstung -->
+    <div class="build-slot" id="slot-head">
+      <div class="build-slot-top" onclick="pickSlot('head')"><div class="slot-label"><span>🪖</span><span>Kopf</span></div><div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div><div class="slot-right"></div></div>
+      <div class="upgrade-row" id="upg-head" style="display:none"></div>
+    </div>
+    <div class="build-slot" id="slot-chest">
+      <div class="build-slot-top" onclick="pickSlot('chest')"><div class="slot-label"><span>🥻</span><span>Brust</span></div><div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div><div class="slot-right"></div></div>
+      <div class="upgrade-row" id="upg-chest" style="display:none"></div>
+    </div>
+    <div class="build-slot" id="slot-gloves">
+      <div class="build-slot-top" onclick="pickSlot('gloves')"><div class="slot-label"><span>🧤</span><span>Arme</span></div><div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div><div class="slot-right"></div></div>
+      <div class="upgrade-row" id="upg-gloves" style="display:none"></div>
+    </div>
+    <div class="build-slot" id="slot-waist">
+      <div class="build-slot-top" onclick="pickSlot('waist')"><div class="slot-label"><span>🩱</span><span>Taille</span></div><div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div><div class="slot-right"></div></div>
+      <div class="upgrade-row" id="upg-waist" style="display:none"></div>
+    </div>
+    <div class="build-slot" id="slot-legs">
+      <div class="build-slot-top" onclick="pickSlot('legs')"><div class="slot-label"><span>🥾</span><span>Beine</span></div><div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div><div class="slot-right"></div></div>
+      <div class="upgrade-row" id="upg-legs" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- Talisman -->
+  <div class="build-section-label">Talisman</div>
+  <div class="build-slots" style="padding-top:4px">
+    <div class="build-slot talisman-slot" id="slot-talisman">
+      <div class="build-slot-top" onclick="switchTab('talisman')">
+        <div class="slot-label"><span>🔮</span><span>Talisman</span></div>
+        <div class="slot-content" id="talisman-display"><div class="slot-empty">— Tippen zum Eingeben —</div></div>
+        <div class="slot-right" id="talisman-right"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mäntel -->
+  <div class="build-section-label">Spezialwerkzeug</div>
+  <div class="build-slots" style="padding-top:4px">
+    <div class="build-slot mantle-slot" id="slot-mantle1">
+      <div class="build-slot-top" onclick="pickMantle(1)">
+        <div class="slot-label"><span>🧣</span><span>Mantel 1</span></div>
+        <div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div>
+        <div class="slot-right"></div>
+      </div>
+    </div>
+    <div class="build-slot mantle-slot" id="slot-mantle2">
+      <div class="build-slot-top" onclick="pickMantle(2)">
+        <div class="slot-label"><span>🧣</span><span>Mantel 2</span></div>
+        <div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div>
+        <div class="slot-right"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="build-summary" style="margin-top:8px"></div>
+  <div id="build-empty" class="empty" style="display:none"></div>
+</div>
+
+<!-- ══ DECOS ══ -->
+<div id="panel-decos" class="panel">
+  <div class="p-head"><h2>Dekorationen einsetzen</h2></div>
+  <div id="decos-content"><div class="empty">Lege zuerst Rüstungsteile an.</div></div>
+</div>
+
+<!-- ══ TALISMAN EDITOR ══ -->
+<div id="panel-talisman" class="panel">
+  <div class="p-head"><h2>Talisman bearbeiten</h2></div>
+  <div style="padding:12px">
+    <div class="talisman-edit">
+      <h3>Skills</h3>
+      <div class="tali-skill-row">
+        <select id="tali-skill1"><option value="">— Skill 1 —</option></select>
+        <input id="tali-level1" type="number" min="1" max="5" value="1" placeholder="Lv">
+      </div>
+      <div class="tali-skill-row">
+        <select id="tali-skill2"><option value="">— Skill 2 —</option></select>
+        <input id="tali-level2" type="number" min="1" max="5" value="1" placeholder="Lv">
+      </div>
+      <div class="tali-slot-row">
+        <label>Slots:</label>
+        <select class="tali-slot-select" id="tali-slot1"><option value="0">—</option><option value="1">①</option><option value="2">②</option><option value="3">③</option><option value="4">④</option></select>
+        <select class="tali-slot-select" id="tali-slot2"><option value="0">—</option><option value="1">①</option><option value="2">②</option><option value="3">③</option></select>
+        <select class="tali-slot-select" id="tali-slot3"><option value="0">—</option><option value="1">①</option><option value="2">②</option><option value="3">③</option></select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button onclick="saveTalisman()" style="flex:1;padding:10px;background:var(--gold-dim);border:1px solid var(--gold);color:var(--text-bright);font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.08em;cursor:pointer;">SPEICHERN</button>
+      <button onclick="clearTalisman()" style="flex:1;padding:10px;background:none;border:1px solid var(--border);color:var(--text-dim);font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.08em;cursor:pointer;">LÖSCHEN</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MANTLE PICKER ══ -->
+<div id="panel-mantle" class="panel">
+  <div class="p-head"><h2 id="mantle-pick-title">Mantel wählen</h2></div>
+  <div id="mantle-list" class="mantle-list"></div>
+</div>
+
+<!-- ══ SKILLS ══ -->
+<div id="panel-skills" class="panel">
+  <div class="p-head"><h2>Aktive Skills</h2></div>
+  <div id="skills-list"><div class="empty">Noch keine Rüstung angelegt.</div></div>
+  <div id="set-bonus-list"></div>
+</div>
+
+<!-- ══ BUILD OVERVIEW ══ -->
+<div id="panel-overview" class="panel">
+  <div class="p-head"><h2>Build</h2></div>
+  <div id="overview-content"><div class="empty">Noch kein Build angelegt.</div></div>
+</div>
+```
 
   </div>
 </div>
 
 <!-- DECO PICKER OVERLAY -->
+
 <div id="deco-picker" class="deco-picker-overlay" onclick="closeDecoPicker(event)">
   <div class="deco-picker-inner" onclick="event.stopPropagation()">
     <div class="deco-picker-head">
@@ -794,7 +822,127 @@ function swapWeapons() {
 }
 
 
-// ── SKILL ACCORDION ──
+// ── SAVES ──
+const SAVES_KEY = 'mhw-builds';
+
+function getSaves() {
+  try { return JSON.parse(localStorage.getItem(SAVES_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function putSaves(saves) {
+  localStorage.setItem(SAVES_KEY, JSON.stringify(saves));
+}
+
+function buildSnapshot() {
+  return {
+    weapon:     weapon  ? { id: weapon.id  } : null,
+    weapon2:    weapon2 ? { id: weapon2.id } : null,
+    build:      Object.fromEntries(ARMOR_SLOTS.map(s => [s, build[s] ? { id: build[s].id } : null])),
+    upgrades:   { ...upgrades },
+    transcended:{ ...transcended },
+    talisman:   { ...talisman },
+    mantles:    { 1: mantles[1]?.name||null, 2: mantles[2]?.name||null },
+    decos:      Object.fromEntries(Object.entries(equippedDecos).map(([k,d]) => [k, d.id]))
+  };
+}
+
+function restoreSnapshot(snap) {
+  weapon  = snap.weapon  ? allWeapons.find(w => w.id === snap.weapon.id)  || null : null;
+  weapon2 = snap.weapon2 ? allWeapons.find(w => w.id === snap.weapon2.id) || null : null;
+  ARMOR_SLOTS.forEach(s => {
+    const id = snap.build?.[s]?.id;
+    build[s] = id ? allArmor.find(a => a.id === id) || null : null;
+  });
+  upgrades    = { ...snap.upgrades };
+  transcended = { ...snap.transcended };
+  talisman    = { ...snap.talisman };
+  const MANTLE_LIST = getAllMantles();
+  mantles[1] = snap.mantles?.[1] ? { name: snap.mantles[1] } : null;
+  mantles[2] = snap.mantles?.[2] ? { name: snap.mantles[2] } : null;
+  equippedDecos = {};
+  Object.entries(snap.decos || {}).forEach(([k, id]) => {
+    const d = allDecos.find(d => d.id === id);
+    if (d) equippedDecos[k] = d;
+  });
+}
+
+function getAllMantles() {
+  // reuse the mantles list from the rendered mantle tab
+  return window._mantleList || [];
+}
+
+function openSaves() {
+  renderSavesList();
+  document.getElementById('save-name-input').value = '';
+  document.getElementById('saves-overlay').style.display = 'flex';
+}
+
+function closeSaves(e) {
+  if (e && e.target !== document.getElementById('saves-overlay')) return;
+  document.getElementById('saves-overlay').style.display = 'none';
+}
+
+function renderSavesList() {
+  const saves = getSaves();
+  const el = document.getElementById('saves-list');
+  if (saves.length === 0) {
+    el.innerHTML = '<div class="empty">Noch keine Builds gespeichert.</div>';
+    return;
+  }
+  el.innerHTML = saves.map((s, i) => `
+    <div class="save-item">
+      <div>
+        <div class="save-item-name">${s.name}</div>
+        <div class="save-item-date">${s.date}</div>
+      </div>
+      <div class="save-item-btns">
+        <button class="save-load-btn" onclick="loadBuild(${i})">Laden</button>
+        <button class="save-del-btn" onclick="deleteBuild(${i})">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function saveCurrentBuild() {
+  const name = document.getElementById('save-name-input').value.trim();
+  if (!name) { showToast('Bitte einen Namen eingeben!'); return; }
+  const saves = getSaves();
+  const existing = saves.findIndex(s => s.name === name);
+  const entry = {
+    name,
+    date: new Date().toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }),
+    snap: buildSnapshot()
+  };
+  if (existing >= 0) saves[existing] = entry;
+  else saves.unshift(entry);
+  putSaves(saves);
+  renderSavesList();
+  document.getElementById('save-name-input').value = '';
+  showToast(`✓ „${name}" gespeichert`);
+}
+
+function loadBuild(idx) {
+  const saves = getSaves();
+  const entry = saves[idx];
+  if (!entry) return;
+  restoreSnapshot(entry.snap);
+  renderBuild();
+  renderSkills();
+  renderDecoPanel();
+  renderArmorList();
+  closeSaves();
+  showToast(`✓ „${entry.name}" geladen`);
+  switchTab('build');
+}
+
+function deleteBuild(idx) {
+  const saves = getSaves();
+  const name = saves[idx]?.name;
+  saves.splice(idx, 1);
+  putSaves(saves);
+  renderSavesList();
+  showToast(`„${name}" gelöscht`);
+}
 function toggleSkillAccordion(id) {
   const item = document.getElementById('ski-' + id);
   const acc  = document.getElementById('ska-' + id);
@@ -1444,13 +1592,11 @@ function renderOverview() {
     const atk  = weapon.damage?.raw || weapon.damage?.display || '?';
     const elem = (weapon.specials||[])[0];
     const aff  = weapon.affinity || 0;
-    const slots = slotsHtmlInline(weapon.slots||[]);
     html += `<div class="ov-section">
       <div class="ov-section-title">⚔️ Offense — ${weapon.name}</div>
       <div class="ov-row"><span class="ov-label">Angriff</span><span class="ov-val atk">${atk}</span></div>
       ${elem ? `<div class="ov-row"><span class="ov-label">${elem.element||'Element'}</span><span class="ov-val elem">${elem.damage?.raw||elem.damage?.display||'?'}</span></div>` : ''}
       ${aff ? `<div class="ov-row"><span class="ov-label">Affinität</span><span class="ov-val aff">${aff>0?'+':''}${aff}%</span></div>` : ''}
-      ${slots ? `<div class="ov-row"><span class="ov-label">Slots</span><span class="ov-val">${slots}</span></div>` : ''}
     </div>`;
   }
 
@@ -1593,6 +1739,22 @@ function renderSkills() {
 // ── START ──
 init();
 </script>
+
+  <!-- Saves Sheet -->
+
+  <div id="saves-overlay" class="saves-overlay" style="display:none" onclick="closeSaves(event)">
+    <div class="saves-sheet" onclick="event.stopPropagation()">
+      <div class="saves-head">
+        <span class="saves-head-title">💾 Gespeicherte Builds</span>
+        <button class="saves-close" onclick="closeSaves()">✕</button>
+      </div>
+      <div class="saves-new">
+        <input id="save-name-input" placeholder="Build-Name…" maxlength="40" autocorrect="off" spellcheck="false">
+        <button class="saves-new-btn" onclick="saveCurrentBuild()">Speichern</button>
+      </div>
+      <div class="saves-list" id="saves-list"></div>
+    </div>
+  </div>
   <!-- Toast -->
   <div id="toast" class="toast"></div>
   <!-- Weapon slot popup -->

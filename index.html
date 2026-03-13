@@ -1762,15 +1762,13 @@ function renderOverview() {
 
   el.innerHTML = html;
 }
-function renderSkills() {
+function collectSkills() {
   const totals = {};
-
   function addSkill(id, name, level) {
     const max = skillMap[id]?.ranks?.length || 7;
     if (!totals[id]) totals[id] = { name, level:0, max };
     totals[id].level += level;
   }
-
   (weapon?.skills||[]).forEach(sr => { const id=sr.skill?.id; if(id) addSkill(id,sName(sr),sr.level||1); });
   ARMOR_SLOTS.forEach(slot => {
     (build[slot]?.skills||[]).forEach(sr => { const id=sr.skill?.id; if(id) addSkill(id,sName(sr),sr.level||1); });
@@ -1780,6 +1778,11 @@ function renderSkills() {
   Object.values(equippedDecos).forEach(deco => {
     (deco.skills||[]).forEach(sr => { const id=sr.skill?.id; if(id) addSkill(id,sName(sr),sr.level||1); });
   });
+  return totals;
+}
+
+function renderSkills() {
+  const totals = collectSkills();
 
   const container = document.getElementById('skills-list');
   const entries = Object.entries(totals).sort((a,b) => b[1].level - a[1].level);

@@ -285,29 +285,53 @@ html, body {
 .set-bonus-item.on { color: var(--gold-light); }
 .set-bonus-count { font-family: 'Cinzel', serif; font-size: .7rem; color: var(--gold); min-width: 28px; }
 @media print {
-  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  body { background: #fff !important; color: #1a1a1a !important; font-family: Georgia, serif; }
-  .app, .content { display: block !important; height: auto !important; overflow: visible !important; }
-  .hdr, .tab-bar, #panel-search, #panel-build, #panel-decos, #panel-skills,
-  #panel-mantle, #deco-picker, #saves-overlay, #toast, .wslot-overlay { display: none !important; }
-  #panel-overview { display: block !important; overflow: visible !important; }
-  .p-head button { display: none !important; }
-  #print-area { display: block !important; }
-  .print-header { font-size: 1.1rem; font-weight: bold; border-bottom: 2px solid #8B6914; padding-bottom: 6px; margin-bottom: 12px; color: #8B6914; }
-  .print-section { margin-bottom: 14px; }
-  .print-section-title { font-size: .75rem; text-transform: uppercase; letter-spacing: .1em; color: #8B6914; border-bottom: 1px solid #ccc; padding-bottom: 3px; margin-bottom: 6px; font-family: Georgia, serif; }
-  .print-row { display: flex; justify-content: space-between; font-size: .82rem; padding: 2px 0; border-bottom: 1px solid #eee; }
-  .print-row-label { color: #555; }
-  .print-row-val { font-weight: bold; }
-  .print-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; }
-  .print-piece { font-size: .8rem; padding: 3px 0; border-bottom: 1px solid #eee; }
-  .print-piece-name { font-weight: bold; }
-  .print-piece-sub { color: #666; font-size: .72rem; }
-  .print-deco-list { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .78rem; }
-  .print-deco-item { color: #333; }
-  .print-deco-item .cnt { color: #8B6914; font-weight: bold; }
+  @page { margin: 14mm 12mm; }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
+  body, html { background: #fff !important; margin: 0; padding: 0; }
+  .app { display: none !important; }
+  #print-doc { display: block !important; font-family: 'Segoe UI', Arial, sans-serif; font-size: 9pt; color: #1a1a1a; }
+
+/* header */
+.pd-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2.5px solid #8B6914; padding-bottom: 5px; margin-bottom: 10px; }
+.pd-title { font-size: 13pt; font-weight: 700; color: #8B6914; letter-spacing: .04em; }
+.pd-sub { font-size: 8pt; color: #666; }
+
+/* two-column layout */
+.pd-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; margin-bottom: 8px; }
+.pd-col {}
+
+/* section */
+.pd-section { margin-bottom: 8px; break-inside: avoid; }
+.pd-section-title { font-size: 7pt; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #8B6914; border-bottom: 1px solid #d4a843; padding-bottom: 2px; margin-bottom: 4px; }
+
+/* stat rows */
+.pd-row { display: flex; justify-content: space-between; align-items: baseline; padding: 1.5px 0; border-bottom: 1px solid #f0ece4; }
+.pd-row-label { color: #444; }
+.pd-row-val { font-weight: 600; color: #1a1a1a; min-width: 36px; text-align: right; }
+.pd-row-val.atk { color: #b84c00; }
+.pd-row-val.pos { color: #2a7a3a; }
+.pd-row-val.neg { color: #aa2222; }
+
+/* equipment */
+.pd-equip-row { display: grid; grid-template-columns: 70px 1fr auto; gap: 0 6px; padding: 2px 0; border-bottom: 1px solid #f0ece4; align-items: baseline; }
+.pd-equip-label { font-size: 7.5pt; color: #888; text-transform: uppercase; letter-spacing: .04em; }
+.pd-equip-name { font-weight: 600; color: #1a1a1a; }
+.pd-equip-sub { font-size: 7.5pt; color: #666; text-align: right; white-space: nowrap; }
+
+/* skills grid */
+.pd-skills-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+.pd-skill-row { display: flex; justify-content: space-between; padding: 1.5px 0; border-bottom: 1px solid #f0ece4; }
+.pd-skill-name { color: #1a1a1a; }
+.pd-skill-lv { font-weight: 600; color: #8B6914; min-width: 28px; text-align: right; }
+
+/* deco farm list */
+.pd-deco-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px 8px; }
+.pd-deco-item { padding: 1.5px 0; border-bottom: 1px solid #f0ece4; display: flex; gap: 5px; }
+.pd-deco-cnt { font-weight: 700; color: #8B6914; min-width: 16px; }
+.pd-deco-name { color: #333; }
 }
 </style>
+
 </head>
 <body>
 <div class="app">
@@ -567,6 +591,10 @@ html, body {
 
   </div>
 </div>
+
+<!-- PRINT DOCUMENT (outside app, hidden unless printing) -->
+
+<div id="print-doc" style="display:none"></div>
 
 <!-- DECO PICKER OVERLAY -->
 
@@ -851,78 +879,87 @@ function swapWeapons() {
 
 // ── PDF EXPORT ──
 function exportPDF() {
-  const pa = document.getElementById('print-area');
-
-  // ── STATS ──
+  // ── Stats ──
   const totalDef = ARMOR_SLOTS.reduce((s,sl) => s + currentDef(sl), 0);
-  const res = ['fire','water','ice','thunder','dragon'];
-  const resDE = { fire:'Feuer', water:'Wasser', ice:'Eis', thunder:'Donner', dragon:'Drache' };
+  const RES_KEYS = ['fire','water','ice','thunder','dragon'];
+  const RES_DE   = { fire:'🔥 Fire', water:'💧 Water', ice:'❄️ Ice', thunder:'⚡ Thunder', dragon:'🐉 Dragon' };
   const totalRes = {};
-  res.forEach(r => {
-    totalRes[r] = ARMOR_SLOTS.reduce((s,sl) => s + (build[sl]?.resistances?.[r]||0), 0);
+  RES_KEYS.forEach(r => { totalRes[r] = ARMOR_SLOTS.reduce((s,sl) => s + (build[sl]?.resistances?.[r]||0), 0); });
+
+  // offense rows
+  const offRows = [];
+  if (weapon) {
+    offRows.push(`<div class="pd-row"><span class="pd-row-label">Angriff</span><span class="pd-row-val atk">${weapon.damage?.raw||weapon.damage?.display||'?'}</span></div>`);
+    const elem = (weapon.specials||[])[0];
+    if (elem) offRows.push(`<div class="pd-row"><span class="pd-row-label">${elem.element||'Element'}</span><span class="pd-row-val">${elem.damage?.raw||'?'}</span></div>`);
+    if (weapon.affinity) offRows.push(`<div class="pd-row"><span class="pd-row-label">Affinität</span><span class="pd-row-val">${weapon.affinity>0?'+':''}${weapon.affinity}%</span></div>`);
+  }
+
+  // defense rows
+  const defRows = [`<div class="pd-row"><span class="pd-row-label">Defense</span><span class="pd-row-val">${totalDef}</span></div>`];
+  RES_KEYS.forEach(r => {
+    const v = totalRes[r];
+    const cls = v >= 10 ? 'pos' : v < 0 ? 'neg' : '';
+    defRows.push(`<div class="pd-row"><span class="pd-row-label">${RES_DE[r]}</span><span class="pd-row-val ${cls}">${v>=0?'+':''}${v}</span></div>`);
   });
 
-  const atkLine = weapon ? `<div class="print-row"><span class="print-row-label">Angriff (${weapon.name})</span><span class="print-row-val">${weapon.damage?.raw||weapon.damage?.display||'?'}</span></div>` : '';
-  const affLine = weapon?.affinity ? `<div class="print-row"><span class="print-row-label">Affinität</span><span class="print-row-val">${weapon.affinity>0?'+':''}${weapon.affinity}%</span></div>` : '';
-  const elemLine = weapon ? ((weapon.specials||[])[0] ? `<div class="print-row"><span class="print-row-label">${(weapon.specials[0].element||'Element')}</span><span class="print-row-val">${weapon.specials[0].damage?.raw||'?'}</span></div>` : '') : '';
-  const defLine = `<div class="print-row"><span class="print-row-label">Defense</span><span class="print-row-val">${totalDef}</span></div>`;
-  const resLines = res.map(r => `<div class="print-row"><span class="print-row-label">${resDE[r]}</span><span class="print-row-val">${totalRes[r]>=0?'+':''}${totalRes[r]}</span></div>`).join('');
-
-  // ── SKILLS ──
+  // ── Skills ──
   const totals = collectSkills();
-  const skillLines = Object.entries(totals).sort((a,b)=>b[1].level-a[1].level).map(([,{name,level,max}])=>
-    `<div class="print-row"><span class="print-row-label">${name}</span><span class="print-row-val">Lv${Math.min(level,max)}${level>max?'!':''}</span></div>`
+  const skillEntries = Object.entries(totals).sort((a,b) => b[1].level - a[1].level);
+  const skillRows = skillEntries.map(([,{name,level,max}]) =>
+    `<div class="pd-skill-row"><span class="pd-skill-name">${name}</span><span class="pd-skill-lv">Lv${Math.min(level,max)}${level>max?'!':''}</span></div>`
   ).join('');
 
-  // ── EQUIPMENT ──
-  const pieces = [];
-  if (weapon) pieces.push({ label:'Hauptwaffe', name: weapon.name, sub: `ATK ${weapon.damage?.raw||'?'}${weapon.affinity?` · ${weapon.affinity>0?'+':''}${weapon.affinity}%`:''}` });
-  if (weapon2) pieces.push({ label:'Sekundärwaffe', name: weapon2.name, sub: `ATK ${weapon2.damage?.raw||'?'}` });
+  // ── Equipment ──
+  const equipRows = [];
+  if (weapon) equipRows.push(`<div class="pd-equip-row"><span class="pd-equip-label">Hauptwaffe</span><span class="pd-equip-name">${weapon.name}</span><span class="pd-equip-sub">ATK ${weapon.damage?.raw||'?'}${weapon.affinity?` · ${weapon.affinity>0?'+':''}${weapon.affinity}%`:''}</span></div>`);
+  if (weapon2) equipRows.push(`<div class="pd-equip-row"><span class="pd-equip-label">Sekundär</span><span class="pd-equip-name">${weapon2.name}</span><span class="pd-equip-sub">ATK ${weapon2.damage?.raw||'?'}</span></div>`);
   ARMOR_SLOTS.forEach(sl => {
     if (!build[sl]) return;
     const upg = upgrades[sl]||0;
     const tr  = transcended[sl];
     const def = currentDef(sl);
-    pieces.push({ label: SLOT_DE[sl]||sl, name: build[sl].name, sub: `DEF ${def}${upg?` (+${upg})`:''}${tr?' ✨':''}` });
+    equipRows.push(`<div class="pd-equip-row"><span class="pd-equip-label">${SLOT_DE[sl]||sl}</span><span class="pd-equip-name">${build[sl].name}</span><span class="pd-equip-sub">DEF ${def}${upg?` +${upg}`:''}${tr?' ✨':''}</span></div>`);
   });
-  if (talisman.skill1) {
-    const s1 = skillMap[talisman.skill1]?.name||'';
-    const s2 = talisman.skill2 ? ` · ${skillMap[talisman.skill2]?.name||''} Lv${talisman.level2||1}` : '';
-    pieces.push({ label:'Talisman', name: `${s1} Lv${talisman.level1||1}${s2}`, sub:'' });
+  if (talisman.skill1id) {
+    const s1 = skillMap[talisman.skill1id]?.name||'';
+    const s2 = talisman.skill2id ? ` · ${skillMap[talisman.skill2id]?.name||''} Lv${talisman.skill2lv||1}` : '';
+    equipRows.push(`<div class="pd-equip-row"><span class="pd-equip-label">Talisman</span><span class="pd-equip-name">${s1} Lv${talisman.skill1lv||1}${s2}</span><span class="pd-equip-sub"></span></div>`);
   }
-  const pieceHTML = pieces.map(p => `<div class="print-piece"><span class="print-piece-name">[${p.label}] ${p.name}</span>${p.sub?`<span class="print-piece-sub"> — ${p.sub}</span>`:''}</div>`).join('');
 
-  // ── DECO FARMLISTE ──
+  // ── Deco farm list ──
   const decoCount = {};
-  Object.values(equippedDecos).forEach(d => {
-    const key = d.name;
-    decoCount[key] = (decoCount[key]||0) + 1;
-  });
-  const decoHTML = Object.entries(decoCount).sort((a,b)=>a[0].localeCompare(b[0])).map(([name,cnt])=>
-    `<span class="print-deco-item"><span class="cnt">${cnt}×</span> ${name}</span>`
+  Object.values(equippedDecos).forEach(d => { decoCount[d.name] = (decoCount[d.name]||0) + 1; });
+  const decoRows = Object.entries(decoCount).sort((a,b)=>a[0].localeCompare(b[0])).map(([name,cnt]) =>
+    `<div class="pd-deco-item"><span class="pd-deco-cnt">${cnt}×</span><span class="pd-deco-name">${name}</span></div>`
   ).join('');
 
-  const buildName = (() => { try { return JSON.parse(localStorage.getItem('mhw-builds')||'[]')[0]?.name || 'Mein Build'; } catch { return 'Mein Build'; } })();
+  const buildName = (() => { try { return JSON.parse(localStorage.getItem('mhw-builds')||'[]')[0]?.name||'Build'; } catch { return 'Build'; } })();
 
-  pa.innerHTML = `
-    <div class="print-header">⚔️ MH Wilds · ${buildName} · Annariel HR136</div>
-    <div class="print-section">
-      <div class="print-section-title">Stats</div>
-      ${atkLine}${elemLine}${affLine}${defLine}${resLines}
+  document.getElementById('print-doc').innerHTML = `
+    <div class="pd-header">
+      <div>
+        <div class="pd-title">⚔️ MH Wilds · Build Planner</div>
+        <div class="pd-sub">Annariel · HR 136 · Sword &amp; Shield</div>
+      </div>
+      <div class="pd-sub" style="text-align:right;font-weight:600;color:#8B6914">${buildName}</div>
     </div>
-    <div class="print-section">
-      <div class="print-section-title">Aktive Skills</div>
-      <div class="print-grid">${skillLines}</div>
+
+    <div class="pd-cols">
+      <div class="pd-col">
+        ${weapon ? `<div class="pd-section"><div class="pd-section-title">⚔️ Offense — ${weapon.name}</div>${offRows.join('')}</div>` : ''}
+        <div class="pd-section"><div class="pd-section-title">🛡️ Defense</div>${defRows.join('')}</div>
+      </div>
+      <div class="pd-col">
+        <div class="pd-section"><div class="pd-section-title">✨ Aktive Skills</div><div class="pd-skills-grid">${skillRows}</div></div>
+      </div>
     </div>
-    <div class="print-section">
-      <div class="print-section-title">Equipment</div>
-      ${pieceHTML}
-    </div>
-    ${decoHTML ? `<div class="print-section"><div class="print-section-title">Dekorationen (Farmliste)</div><div class="print-deco-list">${decoHTML}</div></div>` : ''}
+
+    <div class="pd-section"><div class="pd-section-title">🎽 Equipment</div>${equipRows.join('')}</div>
+    ${decoRows ? `<div class="pd-section"><div class="pd-section-title">💎 Dekorationen (Farmliste)</div><div class="pd-deco-grid">${decoRows}</div></div>` : ''}
   `;
-  pa.style.display = 'block';
+
   window.print();
-  pa.style.display = 'none';
 }
 const SAVES_KEY = 'mhw-builds';
 

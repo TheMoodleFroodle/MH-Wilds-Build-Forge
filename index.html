@@ -585,7 +585,6 @@ html, body {
     <button onclick="exportPDF()" style="background:none;border:1px solid var(--border);color:var(--text-dim);font-family:'Cinzel',serif;font-size:.65rem;padding:6px 10px;cursor:pointer;letter-spacing:.06em;-webkit-tap-highlight-color:transparent;">📄 PDF</button>
   </div>
   <div id="overview-content"><div class="empty">Noch kein Build angelegt.</div></div>
-  <div id="print-area" style="display:none"></div>
 </div>
 ```
 
@@ -1543,7 +1542,8 @@ function renderDecoPanel() {
 
 // ── DECO PICKER ──
 function openDecoPicker(pieceKey, slotIdx, maxSize) {
-  decoPickerTarget = { pieceKey, slotIdx, maxSize };
+  const isWeapon = pieceKey === 'weapon' || pieceKey === 'weapon2';
+  decoPickerTarget = { pieceKey, slotIdx, maxSize, isWeapon };
   document.getElementById('deco-search').value = '';
   decoCategory = '';
   document.querySelectorAll('.deco-cat-btn').forEach(b => b.classList.toggle('on', b.dataset.cat === ''));
@@ -1580,7 +1580,8 @@ function renderDecoList() {
       const sid = sr.skill?.id;
       return sid && skillMap[sid]?.icon?.kind === decoCategory;
     });
-    return fits && matches && catMatches;
+    const dualOk = (d.skills||[]).length <= 1 || decoPickerTarget.isWeapon;
+    return fits && matches && catMatches && dualOk;
   }).sort((a,b) => {
     const aName = sName((a.skills||[])[0]) || a.name;
     const bName = sName((b.skills||[])[0]) || b.name;
@@ -1734,7 +1735,7 @@ function renderOverview() {
       <div class="ov-section-title">⚔️ Offense — ${weapon.name}</div>
       <div class="ov-row"><span class="ov-label">Angriff</span><span class="ov-val atk">${atk}</span></div>
       ${elem ? `<div class="ov-row"><span class="ov-label">${elem.element||'Element'}</span><span class="ov-val elem">${elem.damage?.raw||elem.damage?.display||'?'}</span></div>` : ''}
-      ${aff ? `<div class="ov-row"><span class="ov-label">Affinität</span><span class="ov-val aff">${aff>0?'+':''}${aff}%</span></div>` : ''}
+      <div class="ov-row"><span class="ov-label">Affinität</span><span class="ov-val aff">${aff>0?'+':''}${aff}%</span></div>
     </div>`;
   }
 

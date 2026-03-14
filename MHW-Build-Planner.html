@@ -1,0 +1,1905 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MHW Build">
+<title>MHW Wilds · Build Planner</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0d0b08; --surface: #161210; --surface2: #1e1a15;
+  --border: #3a2e22; --border-hi: #6b4f2e;
+  --gold: #c9922a; --gold-light: #e8b84b; --gold-dim: #7a5318;
+  --red: #c0392b; --text: #e8dcc8; --text-dim: #9a8a72;
+  --text-bright: #f5ead6; --amber: #d4813a; --teal: #2a9d8f;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+html, body {
+  height: 100%; background: var(--bg); color: var(--text);
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-size: 15px; line-height: 1.5;
+  -webkit-text-size-adjust: 100%; overscroll-behavior: none;
+}
+.app { display: flex; flex-direction: column; height: 100vh; height: -webkit-fill-available; max-width: 600px; margin: 0 auto; }
+/* HEADER */
+.hdr { flex-shrink: 0; background: linear-gradient(180deg,#1a1208,var(--bg)); border-bottom: 1px solid var(--border); padding: calc(10px + var(--safe-top)) 14px 10px; display: flex; align-items: flex-start; justify-content: space-between; }
+.hdr-text { flex: 1; }
+.hdr-save-btn { background: none; border: 1px solid var(--border); color: var(--text-dim); font-size: .8rem; padding: 6px 10px; cursor: pointer; font-family: 'Cinzel', serif; margin-top: 4px; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
+.hdr-save-btn:active { background: var(--surface2); }
+/* SAVES SHEET */
+.saves-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; display: flex; align-items: flex-end; justify-content: center; }
+.saves-sheet { background: var(--surface); border-top: 1px solid var(--border); width: 100%; max-width: 480px; max-height: 80vh; display: flex; flex-direction: column; }
+.saves-head { padding: 14px 16px 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.saves-head-title { font-family: 'Cinzel', serif; font-size: .85rem; color: var(--gold); letter-spacing: .08em; }
+.saves-close { background: none; border: none; color: var(--text-dim); font-size: 1.1rem; cursor: pointer; padding: 2px 6px; }
+.saves-new { display: flex; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.saves-new input { flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 10px; font-family: 'Crimson Pro', serif; font-size: .9rem; outline: none; border-radius: 0; }
+.saves-new-btn { background: none; border: 1px solid var(--gold-dim); color: var(--gold); font-family: 'Cinzel', serif; font-size: .72rem; padding: 8px 12px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.saves-new-btn:active { background: rgba(201,146,42,.1); }
+.saves-list { overflow-y: auto; padding: 6px 0; }
+.save-item { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid rgba(58,46,34,.3); }
+.save-item-name { flex: 1; font-size: .9rem; color: var(--text-bright); }
+.save-item-date { font-size: .65rem; color: var(--text-dim); }
+.save-item-btns { display: flex; gap: 6px; }
+.save-load-btn { background: none; border: 1px solid var(--border); color: var(--text-dim); font-size: .7rem; font-family: 'Cinzel', serif; padding: 5px 9px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.save-load-btn:active { background: var(--surface2); }
+.save-del-btn { background: none; border: none; color: var(--border-hi); font-size: .9rem; padding: 4px 6px; cursor: pointer; }
+.hdr h1 { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--gold-light); letter-spacing: .08em; text-shadow: 0 0 20px rgba(201,146,42,.5); }
+.hdr .sub { font-size: .72rem; color: var(--text-dim); font-style: italic; }
+/* TAB BAR */
+.tab-bar { flex-shrink: 0; display: flex; background: var(--surface); border-bottom: 1px solid var(--border); overflow-x: auto; }
+.tab-bar::-webkit-scrollbar { display: none; }
+.tab { flex: 1; min-width: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 8px 4px; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-dim); font-family: 'Cinzel', serif; font-size: .55rem; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; -webkit-tap-highlight-color: transparent; white-space: nowrap; }
+.tab .ti { font-size: 1rem; line-height: 1; }
+.tab.active { color: var(--gold-light); border-bottom-color: var(--gold); background: var(--surface2); }
+/* CONTENT */
+.content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: calc(8px + var(--safe-bottom)); }
+.panel { display: none; padding-bottom: 20px; }
+.panel.vis { display: block; }
+#print-doc { display: none; }
+/* PANEL HEAD */
+.p-head { position: sticky; top: 0; z-index: 10; background: var(--surface2); border-bottom: 1px solid var(--border); padding: 10px 14px 8px; }
+.p-head h2 { font-family: 'Cinzel', serif; font-size: .72rem; color: var(--gold); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 6px; }
+/* SEARCH */
+.search-input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 10px; font-family: 'Crimson Pro', serif; font-size: 1rem; outline: none; border-radius: 0; -webkit-appearance: none; }
+.search-input:focus { border-color: var(--gold-dim); }
+.search-input::placeholder { color: var(--text-dim); }
+.slot-filters { display: flex; gap: 4px; margin-top: 7px; flex-wrap: wrap; }
+.sf-btn { background: none; border: 1px solid var(--border); color: var(--text-dim); padding: 4px 9px; font-size: .72rem; cursor: pointer; font-family: 'Crimson Pro', serif; -webkit-tap-highlight-color: transparent; border-radius: 0; }
+.sf-btn.on { border-color: var(--gold); color: var(--gold); background: rgba(201,146,42,.08); }
+/* ARMOR LIST */
+.hint { padding: 8px 14px; font-size: .78rem; color: var(--gold); font-style: italic; border-bottom: 1px solid var(--border); background: rgba(201,146,42,.05); }
+.armor-item-old-removed { padding: 10px 14px; cursor: pointer; border-left: 2px solid transparent; border-bottom: 1px solid rgba(58,46,34,.35); display: flex; flex-direction: column; gap: 3px; -webkit-tap-highlight-color: transparent; }
+.armor-item:active { background: var(--surface2); }
+.armor-item.equipped { background: rgba(201,146,42,.07); border-left-color: var(--gold); }
+.armor-item.dim { opacity: .2; pointer-events: none; }
+.ai-name { font-size: .92rem; color: var(--text-bright); }
+.ai-meta { font-size: .72rem; color: var(--text-dim); display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+.kind-badge { font-size: .62rem; padding: 1px 5px; border: 1px solid var(--border); text-transform: uppercase; color: var(--text-dim); white-space: nowrap; }
+.def-val { color: var(--amber); }
+.slots-val { color: var(--teal); }
+/* BUILD SLOTS */
+.build-slots { padding: 10px 12px; display: flex; flex-direction: column; gap: 7px; }
+.build-slot { display: grid; grid-template-columns: 68px 1fr auto; align-items: center; gap: 10px; padding: 11px 12px; background: var(--surface); border: 1px solid var(--border); border-left: 3px solid transparent; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.build-slot:active { background: var(--surface2); }
+.build-slot.active-slot { border-left-color: var(--gold); background: var(--surface2); }
+.build-slot.filled { border-left-color: var(--gold-dim); }
+.build-slot.talisman-slot { border-left-color: #5a3a8a; }
+.build-slot.talisman-slot.filled { border-left-color: #8a5aba; }
+.build-slot.mantle-slot { border-left-color: #1a5a7a; }
+.build-slot.mantle-slot.filled { border-left-color: var(--teal); }
+.build-slot.weapon-slot { border-left-color: #7a2a2a; }
+.build-slot.weapon-slot.filled { border-left-color: var(--red); }
+.ai-add { background: none; border: 1px solid var(--border); color: var(--gold-dim); font-size: 1.1rem; width: 36px; height: 36px; flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
+.ai-add:active { background: var(--surface2); color: var(--gold); }
+.armor-item { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--border); border-left: 2px solid transparent; cursor: default; transition: border-left-color .2s, background .2s; }
+/* TOAST */
+.toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--surface2); border: 1px solid var(--gold-dim); color: var(--gold-light); font-family: 'Cinzel', serif; font-size: .75rem; padding: 9px 18px; white-space: nowrap; z-index: 300; pointer-events: none; opacity: 0; transition: opacity .2s; letter-spacing: .05em; }
+.toast.show { opacity: 1; }
+.ai-info { flex: 1; min-width: 0; }
+/* WEAPON SLOT POPUP */
+.wslot-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; display: flex; align-items: flex-end; justify-content: center; }
+.wslot-sheet { background: var(--surface); border-top: 1px solid var(--border); width: 100%; max-width: 480px; padding: 16px 16px 32px; }
+.wslot-title { font-family: 'Cinzel', serif; font-size: .8rem; color: var(--gold); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 12px; text-align: center; }
+.wslot-name { font-size: .9rem; color: var(--text-bright); text-align: center; margin-bottom: 16px; }
+.wslot-btns { display: flex; flex-direction: column; gap: 8px; }
+.wslot-btn { padding: 13px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: 'Cinzel', serif; font-size: .8rem; cursor: pointer; text-align: left; -webkit-tap-highlight-color: transparent; }
+.wslot-btn:active { background: var(--border); }
+.wslot-btn.primary { border-color: var(--red); color: var(--text-bright); }
+.wslot-cancel { margin-top: 8px; width: 100%; padding: 11px; background: none; border: 1px solid var(--border); color: var(--text-dim); font-family: 'Cinzel', serif; font-size: .75rem; cursor: pointer; }
+.weapon-swap-btn { background: none; border: 1px solid var(--border); color: var(--text-dim); font-family: 'Cinzel', serif; font-size: .65rem; letter-spacing: .08em; padding: 5px 18px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.weapon-swap-btn:active { background: var(--surface2); }
+.secondary-weapon-slot { opacity: .55; }
+.secondary-weapon-slot .slot-label { color: var(--border-hi); }
+.secondary-weapon-slot .slot-armor-name { font-size: .82rem; }
+.weapon-slot .slot-label { font-size: .65rem; gap: 3px; white-space: nowrap; overflow: hidden; }
+.weapon-elem { color: var(--teal); font-size: .72rem; }
+.weapon-aff { color: var(--gold); font-size: .72rem; }
+.sf-btn.weapon-mode { border-color: var(--red); color: var(--red); background: rgba(192,57,43,.08); }
+.slot-label { display: flex; align-items: center; gap: 5px; font-size: .72rem; color: var(--text-dim); font-family: 'Cinzel', serif; letter-spacing: .04em; }
+.slot-content { min-width: 0; }
+.slot-armor-name { font-size: .9rem; color: var(--text-bright); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slot-armor-skills { font-size: .7rem; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slot-empty { font-size: .82rem; color: var(--border-hi); font-style: italic; }
+.slot-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.slot-def { font-size: .78rem; color: var(--amber); font-family: 'Cinzel', serif; }
+.clear-btn { background: none; border: none; color: var(--border-hi); font-size: .9rem; padding: 4px 6px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+/* BUILD SUMMARY */
+.total-bar { margin: 0 12px 8px; padding: 9px 12px; background: var(--surface); border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.total-bar-label { font-size: .72rem; color: var(--text-dim); font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: .06em; }
+.total-bar-val { font-size: .95rem; color: var(--amber); font-family: 'Cinzel', serif; }
+.set-section { margin: 0 12px 12px; padding: 9px 12px; background: var(--surface); border: 1px solid var(--border); }
+.set-title { font-family: 'Cinzel', serif; font-size: .68rem; color: var(--gold); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+.set-item { font-size: .82rem; color: var(--text-dim); padding: 2px 0; display: flex; gap: 6px; }
+.set-count { color: var(--gold); font-family: 'Cinzel', serif; font-size: .72rem; }
+.set-item.on { color: var(--gold-light); }
+.build-section-label { font-family: 'Cinzel', serif; font-size: .65rem; color: var(--text-dim); letter-spacing: .1em; text-transform: uppercase; padding: 10px 12px 4px; border-top: 1px solid var(--border); margin-top: 4px; }
+/* UPGRADE BUTTONS */
+.build-slot { display: flex; flex-direction: column; gap: 0; padding: 0; cursor: default; }
+.build-slot-top { display: grid; grid-template-columns: 68px 1fr auto; align-items: center; gap: 10px; padding: 11px 12px 8px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.weapon-slot .build-slot-top { grid-template-columns: 86px 1fr auto; gap: 8px; }
+.build-slot-top:active { background: var(--surface2); }
+.upgrade-row { display: flex; align-items: center; justify-content: space-between; padding: 0 10px 8px; gap: 8px; }
+.upg-btn { width: 40px; height: 40px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-size: 1.2rem; cursor: pointer; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.upg-btn:active { background: var(--border); }
+.upg-info { flex: 1; text-align: center; }
+.upg-def { font-family: 'Cinzel', serif; font-size: .95rem; color: var(--amber); }
+.upg-level { font-size: .68rem; color: var(--text-dim); margin-top: 1px; }
+.upg-bar { height: 3px; background: var(--border); margin: 4px 0 0; display: flex; overflow: hidden; }
+.upg-bar-fill { height: 100%; transition: width .15s; }
+/* TRANSCENDENCE TOGGLE */
+.transc-row { display: flex; align-items: center; justify-content: center; padding: 0 10px 8px; gap: 8px; border-top: 1px solid var(--border); margin-top: 0; }
+.transc-btn { flex: 1; padding: 7px 10px; background: none; border: 1px solid var(--border); color: var(--text-dim); font-family: 'Cinzel', serif; font-size: .65rem; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.transc-btn.on { border-color: var(--gold-light); color: var(--gold-light); background: rgba(232,184,75,.08); }
+.transc-btn:disabled { opacity: .3; cursor: default; }
+/* SKILL ACCORDION */
+.skill-item { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.skill-item:active { background: var(--surface2); }
+.skill-item.open { background: rgba(201,146,42,.05); }
+.skill-accordion { display: none; background: var(--surface2); border-bottom: 1px solid var(--border); padding: 6px 0 4px; }
+.skill-accordion.open { display: block; }
+.skill-acc-desc { font-size: .75rem; color: var(--text-dim); padding: 4px 14px 8px; line-height: 1.5; border-bottom: 1px solid rgba(58,46,34,.3); }
+.skill-rank-row { padding: 7px 14px; border-bottom: 1px solid rgba(58,46,34,.2); display: flex; gap: 12px; align-items: flex-start; }
+.skill-rank-row:last-child { border-bottom: none; }
+.skill-rank-row.active { background: rgba(201,146,42,.1); border-left: 2px solid var(--gold); padding-left: 12px; }
+.skill-rank-lv { font-family: 'Cinzel', serif; font-size: .68rem; color: var(--gold-dim); flex-shrink: 0; width: 22px; }
+.skill-rank-row.active .skill-rank-lv { color: var(--gold); }
+.skill-rank-desc { font-size: .75rem; color: var(--text-dim); line-height: 1.5; }
+.skill-rank-row.active .skill-rank-desc { color: var(--text); }
+.ov-section { margin: 10px 12px; background: var(--surface); border: 1px solid var(--border); }
+.ov-section-title { font-family: 'Cinzel', serif; font-size: .65rem; color: var(--gold); letter-spacing: .1em; text-transform: uppercase; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.ov-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border-bottom: 1px solid rgba(58,46,34,.3); }
+.ov-row:last-child { border-bottom: none; }
+.ov-label { font-size: .75rem; color: var(--text-dim); }
+.ov-val { font-family: 'Cinzel', serif; font-size: .9rem; color: var(--text-bright); }
+.ov-val.atk { color: var(--red); }
+.ov-val.elem { color: var(--teal); }
+.ov-val.aff { color: var(--gold); }
+.ov-val.def { color: var(--amber); }
+.ov-skills-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+.ov-skill-item { padding: 7px 12px; border-bottom: 1px solid rgba(58,46,34,.3); border-right: 1px solid rgba(58,46,34,.3); display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.ov-skill-item:nth-child(even) { border-right: none; }
+.ov-skill-name { font-size: .78rem; color: var(--text); }
+.ov-pips { display: flex; gap: 2px; }
+.ov-pip { width: 7px; height: 7px; background: var(--border); }
+.ov-pip.on { background: var(--gold); }
+.ov-set-item { padding: 7px 12px; border-bottom: 1px solid rgba(58,46,34,.3); display: flex; gap: 8px; align-items: center; }
+.ov-set-item:last-child { border-bottom: none; }
+.ov-set-count { font-family: 'Cinzel', serif; font-size: .72rem; color: var(--gold); }
+.ov-set-name { font-size: .82rem; }
+.ov-set-name.on { color: var(--gold-light); }
+.ov-empty { padding: 20px; text-align: center; font-size: .85rem; color: var(--text-dim); font-style: italic; }
+.weapon-type-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 6px 12px 4px; }
+.wt-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); font-size: .58rem; font-family: 'Cinzel', serif; padding: 5px 2px; cursor: pointer; text-align: center; line-height: 1.3; -webkit-tap-highlight-color: transparent; }
+.wt-btn.on { border-color: var(--gold); color: var(--gold-light); background: rgba(232,184,75,.1); }
+.wt-btn:active { background: var(--surface2); }
+/* RESISTANCES */
+.resis-bar { margin: 0 12px 10px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); }
+.resis-title { font-family: 'Cinzel', serif; font-size: .65rem; color: var(--gold); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px; }
+.resis-row { display: flex; justify-content: space-between; gap: 4px; }
+.resis-item { flex: 1; text-align: center; }
+.resis-icon { font-size: .85rem; line-height: 1; }
+.resis-val { font-family: 'Cinzel', serif; font-size: .78rem; margin-top: 2px; }
+.resis-val.great { color: #4caf7d; }
+.resis-val.zero  { color: var(--text); }
+.resis-val.warn  { color: #e8b84b; }
+.resis-val.neg   { color: var(--red); }
+/* SKILLS */
+.skill-item { padding: 9px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(58,46,34,.5); }
+.skill-name { font-size: .9rem; color: var(--text); }
+.skill-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.pips { display: flex; gap: 2px; }
+.pip { width: 7px; height: 7px; border-radius: 1px; background: var(--border); }
+.pip.on { background: var(--gold); }
+.pip.over { background: var(--gold-light); }
+.skill-lv { font-family: 'Cinzel', serif; font-size: .72rem; color: var(--gold); min-width: 26px; text-align: right; }
+/* DECOS TAB */
+.deco-piece { margin: 0 12px 10px; background: var(--surface); border: 1px solid var(--border); }
+.deco-piece-header { padding: 9px 12px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); background: var(--surface2); }
+.deco-piece-name { font-size: .88rem; color: var(--text-bright); }
+.deco-piece-label { font-size: .68rem; color: var(--text-dim); font-family: 'Cinzel', serif; letter-spacing: .06em; text-transform: uppercase; }
+.deco-slots { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
+.deco-slot-row { display: flex; align-items: center; gap: 8px; }
+.deco-slot-size { width: 22px; height: 22px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-family: 'Cinzel', serif; font-size: .7rem; color: var(--teal); flex-shrink: 0; }
+.deco-slot-btn { flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text-dim); padding: 5px 10px; text-align: left; font-family: 'Crimson Pro', serif; font-size: .85rem; cursor: pointer; -webkit-tap-highlight-color: transparent; display: flex; justify-content: space-between; align-items: center; }
+.deco-slot-btn.filled { border-color: var(--gold-dim); color: var(--text-bright); }
+.deco-slot-btn .deco-remove { color: var(--border-hi); font-size: .8rem; padding: 0 2px; }
+.deco-no-slots { padding: 8px 12px; font-size: .78rem; color: var(--text-dim); font-style: italic; }
+/* DECO PICKER */
+.deco-picker-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.8); z-index: 100; flex-direction: column; }
+.deco-picker-overlay.vis { display: flex; }
+.deco-picker-inner { background: var(--surface); margin: auto 0 0; max-height: 70vh; display: flex; flex-direction: column; border-top: 2px solid var(--gold); }
+.deco-cat-btn { flex: 1; background: none; border: 1px solid var(--border); color: var(--text-dim); font-size: .65rem; font-family: 'Cinzel', serif; padding: 5px 4px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.deco-cat-btn.on { border-color: var(--gold); color: var(--gold); background: rgba(201,146,42,.08); }
+.deco-picker-head h3 { font-family: 'Cinzel', serif; font-size: .8rem; color: var(--gold); letter-spacing: .1em; margin-bottom: 6px; }
+.deco-picker-close { float: right; background: none; border: none; color: var(--text-dim); font-size: 1.2rem; cursor: pointer; margin-top: -2px; }
+.deco-list { overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; }
+.deco-item { padding: 9px 14px; cursor: pointer; border-bottom: 1px solid rgba(58,46,34,.35); display: flex; align-items: center; gap: 10px; -webkit-tap-highlight-color: transparent; }
+.deco-item:active { background: var(--surface2); }
+.deco-item-size { width: 24px; height: 24px; border: 1px solid var(--teal); display: flex; align-items: center; justify-content: center; font-family: 'Cinzel', serif; font-size: .72rem; color: var(--teal); flex-shrink: 0; }
+.deco-item-info { min-width: 0; }
+.deco-item-name { font-size: .88rem; color: var(--text-bright); }
+.deco-item-skill { font-size: .72rem; color: var(--text-dim); }
+/* TALISMAN MANUAL */
+.talisman-edit { margin: 0 12px; background: var(--surface); border: 1px solid var(--border); padding: 12px; }
+.talisman-edit h3 { font-family: 'Cinzel', serif; font-size: .72rem; color: var(--gold); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 10px; }
+.tali-skill-row { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
+.tali-skill-row select, .tali-skill-row input { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 6px 8px; font-family: 'Crimson Pro', serif; font-size: .88rem; outline: none; -webkit-appearance: none; border-radius: 0; }
+.tali-skill-row select { flex: 1; }
+.tali-skill-row input { width: 52px; text-align: center; }
+.tali-slot-row { display: flex; gap: 6px; margin-top: 8px; align-items: center; }
+.tali-slot-row label { font-size: .75rem; color: var(--text-dim); font-family: 'Cinzel', serif; }
+.tali-slot-select { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 5px 8px; font-family: 'Crimson Pro', serif; font-size: .88rem; outline: none; -webkit-appearance: none; border-radius: 0; width: 52px; }
+/* MANTLE */
+.mantle-list { padding: 4px 0 16px; }
+.mantle-item { padding: 10px 14px; cursor: pointer; border-left: 2px solid transparent; border-bottom: 1px solid rgba(58,46,34,.35); -webkit-tap-highlight-color: transparent; }
+.mantle-item:active { background: var(--surface2); }
+.mantle-item.equipped { background: rgba(42,157,143,.07); border-left-color: var(--teal); }
+/* STATES */
+.loading-wrap { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 48px 20px; color: var(--text-dim); font-style: italic; }
+.spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin .8s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty { padding: 36px 20px; text-align: center; color: var(--text-dim); font-style: italic; line-height: 2; font-size: .9rem; }
+.err { padding: 16px 14px; color: var(--red); font-size: .85rem; }
+.divider { height: 1px; background: var(--border); margin: 4px 12px; }
+/* FILTER ROW */
+.filter-row { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; align-items: center; }
+.filter-label { font-size: .62rem; color: var(--text-dim); font-family: 'Cinzel', serif; letter-spacing: .06em; text-transform: uppercase; margin-right: 2px; white-space: nowrap; }
+.filter-select { background: var(--bg); border: 1px solid var(--border); color: var(--text-dim); padding: 4px 7px; font-family: 'Crimson Pro', serif; font-size: .78rem; outline: none; -webkit-appearance: none; border-radius: 0; cursor: pointer; }
+.filter-select.active { border-color: var(--gold-dim); color: var(--text); }
+.sort-btn { background: none; border: 1px solid var(--border); color: var(--text-dim); padding: 4px 9px; font-size: .72rem; cursor: pointer; font-family: 'Crimson Pro', serif; -webkit-tap-highlight-color: transparent; border-radius: 0; display: flex; align-items: center; gap: 3px; }
+.sort-btn.on { border-color: var(--gold-dim); color: var(--gold); }
+.rarity-filters { display: flex; gap: 3px; }
+.rarity-btn { background: none; border: 1px solid var(--border); color: var(--text-dim); padding: 3px 7px; font-size: .7rem; cursor: pointer; font-family: 'Cinzel', serif; -webkit-tap-highlight-color: transparent; border-radius: 0; }
+.rarity-btn.on { border-color: var(--gold); color: var(--gold-light); background: rgba(201,146,42,.1); }
+.rarity-btn.off { opacity: .35; }
+/* SET BONI IN SKILLS */
+.set-bonus-section { margin: 8px 14px 4px; }
+.set-bonus-title { font-family: 'Cinzel', serif; font-size: .65rem; color: var(--gold); letter-spacing: .1em; text-transform: uppercase; padding: 8px 0 4px; border-top: 1px solid var(--border); margin-bottom: 2px; }
+.set-bonus-item { padding: 5px 0; display: flex; gap: 8px; align-items: center; font-size: .82rem; color: var(--text-dim); border-bottom: 1px solid rgba(58,46,34,.3); }
+.set-bonus-item.on { color: var(--gold-light); }
+.set-bonus-count { font-family: 'Cinzel', serif; font-size: .7rem; color: var(--gold); min-width: 28px; }
+@media print {
+  @page { margin: 14mm 12mm; }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
+  body, html { background: #fff !important; margin: 0; padding: 0; }
+  .app { display: none !important; }
+  #print-doc { display: block !important; font-family: 'Segoe UI', Arial, sans-serif; font-size: 9pt; color: #1a1a1a; }
+
+  /* header */
+  .pd-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2.5px solid #8B6914; padding-bottom: 5px; margin-bottom: 10px; }
+  .pd-title { font-size: 13pt; font-weight: 700; color: #8B6914; letter-spacing: .04em; }
+  .pd-sub { font-size: 8pt; color: #666; }
+
+  /* two-column layout */
+  .pd-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; margin-bottom: 8px; }
+  .pd-col {}
+
+  /* section */
+  .pd-section { margin-bottom: 8px; break-inside: avoid; }
+  .pd-section-title { font-size: 7pt; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #8B6914; border-bottom: 1px solid #d4a843; padding-bottom: 2px; margin-bottom: 4px; }
+
+  /* stat rows */
+  .pd-row { display: flex; justify-content: space-between; align-items: baseline; padding: 1.5px 0; border-bottom: 1px solid #f0ece4; }
+  .pd-row-label { color: #444; }
+  .pd-row-val { font-weight: 600; color: #1a1a1a; min-width: 36px; text-align: right; }
+  .pd-row-val.atk { color: #b84c00; }
+  .pd-row-val.pos { color: #2a7a3a; }
+  .pd-row-val.neg { color: #aa2222; }
+
+  /* equipment */
+  .pd-equip-row { display: grid; grid-template-columns: 70px 1fr auto; gap: 0 6px; padding: 2px 0; border-bottom: 1px solid #f0ece4; align-items: baseline; }
+  .pd-equip-label { font-size: 7.5pt; color: #888; text-transform: uppercase; letter-spacing: .04em; }
+  .pd-equip-name { font-weight: 600; color: #1a1a1a; }
+  .pd-equip-sub { font-size: 7.5pt; color: #666; text-align: right; white-space: nowrap; }
+
+  /* skills grid */
+  .pd-skills-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+  .pd-skill-row { display: flex; justify-content: space-between; padding: 1.5px 0; border-bottom: 1px solid #f0ece4; }
+  .pd-skill-name { color: #1a1a1a; }
+  .pd-skill-lv { font-weight: 600; color: #8B6914; min-width: 28px; text-align: right; }
+
+  /* deco farm list */
+  .pd-deco-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px 8px; }
+  .pd-deco-item { padding: 1.5px 0; border-bottom: 1px solid #f0ece4; display: flex; gap: 5px; }
+  .pd-deco-cnt { font-weight: 700; color: #8B6914; min-width: 16px; }
+  .pd-deco-name { color: #333; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="hdr">
+    <div class="hdr-text">
+      <h1>⚔️ MH WILDS · BUILD PLANNER</h1>
+      <div class="sub">Sword &amp; Shield · Annariel · HR 136</div>
+    </div>
+    <button class="hdr-save-btn" onclick="openSaves()">💾 Builds</button>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab active" data-tab="search"   onclick="switchTab('search')"  ><span class="ti">🔍</span>Suche</button>
+    <button class="tab"        data-tab="build"    onclick="switchTab('build')"   ><span class="ti">🔨</span>Schmiede</button>
+    <button class="tab"        data-tab="decos"    onclick="switchTab('decos')"   ><span class="ti">💎</span>Decos</button>
+    <button class="tab"        data-tab="skills"   onclick="switchTab('skills')"  ><span class="ti">📊</span>Skills</button>
+    <button class="tab"        data-tab="overview" onclick="switchTab('overview')"><span class="ti">🐉</span>Build</button>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ SUCHE ══ -->
+    <div id="panel-search" class="panel vis">
+      <div class="p-head">
+        <h2 id="search-title">Rüstung durchsuchen</h2>
+        <input id="search-input" class="search-input" placeholder="Name eingeben…"
+          oninput="applyFilters()" autocomplete="off" autocorrect="off" spellcheck="false">
+        <!-- Slot / Waffe Tabs -->
+        <div class="slot-filters" id="slot-type-row">
+          <button class="sf-btn on" onclick="setSlotFilter(null,this)">Alle</button>
+          <button class="sf-btn" onclick="setSlotFilter('head',this)">🪖 Kopf</button>
+          <button class="sf-btn" onclick="setSlotFilter('chest',this)">🥻 Brust</button>
+          <button class="sf-btn" onclick="setSlotFilter('gloves',this)">🧤 Arme</button>
+          <button class="sf-btn" onclick="setSlotFilter('waist',this)">🩱 Taille</button>
+          <button class="sf-btn" onclick="setSlotFilter('legs',this)">🥾 Beine</button>
+          <button class="sf-btn" id="weapon-filter-btn" onclick="setWeaponMode(this)">⚔️ Waffe</button>
+        </div>
+        <!-- Rarität -->
+        <div class="filter-row">
+          <span class="filter-label">R</span>
+          <div class="rarity-filters" id="rarity-filter-row">
+            <button class="rarity-btn off" data-r="1" onclick="toggleRarity(1,this)">1</button>
+            <button class="rarity-btn off" data-r="2" onclick="toggleRarity(2,this)">2</button>
+            <button class="rarity-btn off" data-r="3" onclick="toggleRarity(3,this)">3</button>
+            <button class="rarity-btn off" data-r="4" onclick="toggleRarity(4,this)">4</button>
+            <button class="rarity-btn on"  data-r="5" onclick="toggleRarity(5,this)">5</button>
+            <button class="rarity-btn on"  data-r="6" onclick="toggleRarity(6,this)">6</button>
+            <button class="rarity-btn on"  data-r="7" onclick="toggleRarity(7,this)">7</button>
+            <button class="rarity-btn on"  data-r="8" onclick="toggleRarity(8,this)">8</button>
+          </div>
+        </div>
+        <!-- Armor-only filters -->
+        <div class="filter-row" id="armor-filters">
+          <span class="filter-label">Skill</span>
+          <select class="filter-select" id="filter-skill" onchange="applyFilters()">
+            <option value="">Alle</option>
+          </select>
+          <span class="filter-label" style="margin-left:4px">Slots</span>
+          <select class="filter-select" id="filter-slots" onchange="applyFilters()">
+            <option value="0">Alle</option>
+            <option value="1">≥①</option>
+            <option value="2">≥②</option>
+            <option value="3">≥③</option>
+          </select>
+        </div>
+        <!-- Weapon type grid (visible in weapon mode) -->
+        <div id="weapon-type-grid" class="weapon-type-grid" style="display:none">
+          <button class="wt-btn on"  data-wt="sword-shield"   onclick="setWeaponType('sword-shield',this)">⚔️<br>SnS</button>
+          <button class="wt-btn"     data-wt="dual-blades"    onclick="setWeaponType('dual-blades',this)">🗡️<br>DB</button>
+          <button class="wt-btn"     data-wt="great-sword"    onclick="setWeaponType('great-sword',this)">🗡️<br>GS</button>
+          <button class="wt-btn"     data-wt="long-sword"     onclick="setWeaponType('long-sword',this)">⚔️<br>LS</button>
+          <button class="wt-btn"     data-wt="hammer"         onclick="setWeaponType('hammer',this)">🔨<br>Ham</button>
+          <button class="wt-btn"     data-wt="hunting-horn"   onclick="setWeaponType('hunting-horn',this)">🎺<br>HH</button>
+          <button class="wt-btn"     data-wt="lance"          onclick="setWeaponType('lance',this)">🏹<br>Lnc</button>
+          <button class="wt-btn"     data-wt="gunlance"       onclick="setWeaponType('gunlance',this)">💥<br>GL</button>
+          <button class="wt-btn"     data-wt="switch-axe"     onclick="setWeaponType('switch-axe',this)">🪓<br>SA</button>
+          <button class="wt-btn"     data-wt="charge-blade"   onclick="setWeaponType('charge-blade',this)">⚡<br>CB</button>
+          <button class="wt-btn"     data-wt="insect-glaive"  onclick="setWeaponType('insect-glaive',this)">🦋<br>IG</button>
+          <button class="wt-btn"     data-wt="light-bowgun"   onclick="setWeaponType('light-bowgun',this)">🔫<br>LBG</button>
+          <button class="wt-btn"     data-wt="heavy-bowgun"   onclick="setWeaponType('heavy-bowgun',this)">💣<br>HBG</button>
+          <button class="wt-btn"     data-wt="bow"            onclick="setWeaponType('bow',this)">🏹<br>Bow</button>
+        </div>
+        <!-- Weapon-only filters -->
+        <div class="filter-row" id="weapon-filters" style="display:none">
+          <span class="filter-label">Elem</span>
+          <select class="filter-select" id="filter-element" onchange="applyFilters()">
+            <option value="">Alle</option>
+            <option value="fire">🔥 Feuer</option>
+            <option value="water">💧 Wasser</option>
+            <option value="thunder">⚡ Donner</option>
+            <option value="ice">❄️ Eis</option>
+            <option value="dragon">🐉 Drachen</option>
+            <option value="none">— Kein</option>
+          </select>
+          <span class="filter-label" style="margin-left:4px">Aff</span>
+          <select class="filter-select" id="filter-affinity" onchange="applyFilters()">
+            <option value="-999">Alle</option>
+            <option value="0">≥0%</option>
+            <option value="10">≥10%</option>
+            <option value="20">≥20%</option>
+            <option value="25">≥25%</option>
+          </select>
+        </div>
+        <!-- Sort -->
+        <div class="filter-row">
+          <span class="filter-label">Sort</span>
+          <button class="sort-btn on" id="sort-name" onclick="setSort('name',this)">Name</button>
+          <button class="sort-btn" id="sort-stat" onclick="setSort('stat',this)">DEF ↓</button>
+          <button class="sort-btn" id="sort-rarity" onclick="setSort('rarity',this)">Rarität ↓</button>
+        </div>
+      </div>
+      <div id="armor-hint" class="hint" style="display:none"></div>
+      <div id="armor-list"></div>
+    </div>
+
+    <!-- ══ BUILD ══ -->
+    <div id="panel-build" class="panel">
+      <!-- Waffen -->
+      <div class="build-section-label" style="border-top:none;padding-top:10px">Waffen</div>
+      <div class="build-slots" style="padding-bottom:0">
+        <div class="build-slot weapon-slot" id="slot-weapon">
+          <div class="build-slot-top" onclick="pickWeapon('primary')">
+            <div class="slot-label"><span>⚔️</span><span>Haupt</span></div>
+            <div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div>
+            <div class="slot-right"></div>
+          </div>
+        </div>
+        <div class="weapon-swap-row">
+          <button class="weapon-swap-btn" onclick="swapWeapons()">⇅ Tauschen</button>
+        </div>
+        <div class="build-slot weapon-slot secondary-weapon-slot" id="slot-weapon2">
+          <div class="build-slot-top" onclick="pickWeapon('secondary')">
+            <div class="slot-label"><span>⚔️</span><span>Sekundär</span></div>
+            <div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div>
+            <div class="slot-right"></div>
+          </div>
+        </div>
+      </div>
+      <div class="build-section-label" style="border-top:none;padding-top:4px">Rüstung</div>
+      <div class="build-slots" id="build-slots" style="padding-top:4px">
+        <!-- Rüstung -->
+        <div class="build-slot" id="slot-head">
+          <div class="build-slot-top" onclick="pickSlot('head')"><div class="slot-label"><span>🪖</span><span>Kopf</span></div><div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div><div class="slot-right"></div></div>
+          <div class="upgrade-row" id="upg-head" style="display:none"></div>
+        </div>
+        <div class="build-slot" id="slot-chest">
+          <div class="build-slot-top" onclick="pickSlot('chest')"><div class="slot-label"><span>🥻</span><span>Brust</span></div><div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div><div class="slot-right"></div></div>
+          <div class="upgrade-row" id="upg-chest" style="display:none"></div>
+        </div>
+        <div class="build-slot" id="slot-gloves">
+          <div class="build-slot-top" onclick="pickSlot('gloves')"><div class="slot-label"><span>🧤</span><span>Arme</span></div><div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div><div class="slot-right"></div></div>
+          <div class="upgrade-row" id="upg-gloves" style="display:none"></div>
+        </div>
+        <div class="build-slot" id="slot-waist">
+          <div class="build-slot-top" onclick="pickSlot('waist')"><div class="slot-label"><span>🩱</span><span>Taille</span></div><div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div><div class="slot-right"></div></div>
+          <div class="upgrade-row" id="upg-waist" style="display:none"></div>
+        </div>
+        <div class="build-slot" id="slot-legs">
+          <div class="build-slot-top" onclick="pickSlot('legs')"><div class="slot-label"><span>🥾</span><span>Beine</span></div><div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div><div class="slot-right"></div></div>
+          <div class="upgrade-row" id="upg-legs" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- Talisman -->
+      <div class="build-section-label">Talisman</div>
+      <div class="build-slots" style="padding-top:4px">
+        <div class="build-slot talisman-slot" id="slot-talisman">
+          <div class="build-slot-top" onclick="switchTab('talisman')">
+            <div class="slot-label"><span>🔮</span><span>Talisman</span></div>
+            <div class="slot-content" id="talisman-display"><div class="slot-empty">— Tippen zum Eingeben —</div></div>
+            <div class="slot-right" id="talisman-right"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mäntel -->
+      <div class="build-section-label">Spezialwerkzeug</div>
+      <div class="build-slots" style="padding-top:4px">
+        <div class="build-slot mantle-slot" id="slot-mantle1">
+          <div class="build-slot-top" onclick="pickMantle(1)">
+            <div class="slot-label"><span>🧣</span><span>Mantel 1</span></div>
+            <div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div>
+            <div class="slot-right"></div>
+          </div>
+        </div>
+        <div class="build-slot mantle-slot" id="slot-mantle2">
+          <div class="build-slot-top" onclick="pickMantle(2)">
+            <div class="slot-label"><span>🧣</span><span>Mantel 2</span></div>
+            <div class="slot-content"><div class="slot-empty">— Tippen zum Wählen —</div></div>
+            <div class="slot-right"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="build-summary" style="margin-top:8px"></div>
+      <div id="build-empty" class="empty" style="display:none"></div>
+    </div>
+
+    <!-- ══ DECOS ══ -->
+    <div id="panel-decos" class="panel">
+      <div class="p-head"><h2>Dekorationen einsetzen</h2></div>
+      <div id="decos-content"><div class="empty">Lege zuerst Rüstungsteile an.</div></div>
+    </div>
+
+    <!-- ══ TALISMAN EDITOR ══ -->
+    <div id="panel-talisman" class="panel">
+      <div class="p-head"><h2>Talisman bearbeiten</h2></div>
+      <div style="padding:12px">
+        <div class="talisman-edit">
+          <h3>Skills</h3>
+          <div class="tali-skill-row">
+            <select id="tali-skill1"><option value="">— Skill 1 —</option></select>
+            <input id="tali-level1" type="number" min="1" max="5" value="1" placeholder="Lv">
+          </div>
+          <div class="tali-skill-row">
+            <select id="tali-skill2"><option value="">— Skill 2 —</option></select>
+            <input id="tali-level2" type="number" min="1" max="5" value="1" placeholder="Lv">
+          </div>
+          <div class="tali-slot-row">
+            <label>Slots:</label>
+            <select class="tali-slot-select" id="tali-slot1"><option value="0">—</option><option value="1">①</option><option value="2">②</option><option value="3">③</option><option value="4">④</option></select>
+            <select class="tali-slot-select" id="tali-slot2"><option value="0">—</option><option value="1">①</option><option value="2">②</option><option value="3">③</option></select>
+            <select class="tali-slot-select" id="tali-slot3"><option value="0">—</option><option value="1">①</option><option value="2">②</option><option value="3">③</option></select>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button onclick="saveTalisman()" style="flex:1;padding:10px;background:var(--gold-dim);border:1px solid var(--gold);color:var(--text-bright);font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.08em;cursor:pointer;">SPEICHERN</button>
+          <button onclick="clearTalisman()" style="flex:1;padding:10px;background:none;border:1px solid var(--border);color:var(--text-dim);font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.08em;cursor:pointer;">LÖSCHEN</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ MANTLE PICKER ══ -->
+    <div id="panel-mantle" class="panel">
+      <div class="p-head"><h2 id="mantle-pick-title">Mantel wählen</h2></div>
+      <div id="mantle-list" class="mantle-list"></div>
+    </div>
+
+    <!-- ══ SKILLS ══ -->
+    <div id="panel-skills" class="panel">
+      <div class="p-head"><h2>Aktive Skills</h2></div>
+      <div id="skills-list"><div class="empty">Noch keine Rüstung angelegt.</div></div>
+      <div id="set-bonus-list"></div>
+    </div>
+
+    <!-- ══ BUILD OVERVIEW ══ -->
+    <div id="panel-overview" class="panel">
+      <div class="p-head" style="display:flex;align-items:center;justify-content:space-between">
+        <h2>Build</h2>
+        <button onclick="exportPDF()" style="background:none;border:1px solid var(--border);color:var(--text-dim);font-family:'Cinzel',serif;font-size:.65rem;padding:6px 10px;cursor:pointer;letter-spacing:.06em;-webkit-tap-highlight-color:transparent;">📄 PDF</button>
+      </div>
+      <div id="overview-content"><div class="empty">Noch kein Build angelegt.</div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- PRINT DOCUMENT (outside app, hidden unless printing) -->
+<div id="print-doc" style="display:none"></div>
+
+<!-- DECO PICKER OVERLAY -->
+<div id="deco-picker" class="deco-picker-overlay" onclick="closeDecoPicker(event)">
+  <div class="deco-picker-inner" onclick="event.stopPropagation()">
+    <div class="deco-picker-head">
+      <button class="deco-picker-close" onclick="closeDecoPicker()">✕</button>
+      <h3 id="deco-picker-title">Dekoration wählen</h3>
+      <input class="search-input" id="deco-search" placeholder="Name suchen…" oninput="renderDecoList()" autocomplete="off" autocorrect="off" spellcheck="false" style="margin-top:6px">
+      <div style="display:flex;gap:4px;margin-top:6px">
+        <button class="deco-cat-btn on" data-cat="" onclick="setDecoCat('',this)">Alle</button>
+        <button class="deco-cat-btn" data-cat="offense" onclick="setDecoCat('offense',this)">⚔️ Offense</button>
+        <button class="deco-cat-btn" data-cat="defense" onclick="setDecoCat('defense',this)">🛡️ Defense</button>
+        <button class="deco-cat-btn" data-cat="utility" onclick="setDecoCat('utility',this)">🔧 Utility</button>
+      </div>
+    </div>
+    <div id="deco-list" class="deco-list"></div>
+  </div>
+</div>
+
+<script>
+const API = 'https://wilds.mhdb.io/en';
+const ARMOR_SLOTS = ['head','chest','gloves','waist','legs'];
+const SLOT_DE = { head:'Kopf', chest:'Brust', gloves:'Arme', arms:'Arme', waist:'Taille', coil:'Taille', legs:'Beine', greaves:'Beine' };
+const SLOT_ICONS = { head:'🪖', chest:'🥻', gloves:'🧤', waist:'🩱', legs:'🥾' };
+
+function normalizeKind(k) {
+  return { head:'head', helm:'head', chest:'chest', mail:'chest', gloves:'gloves', arms:'gloves', vambraces:'gloves', braces:'gloves', waist:'waist', coil:'waist', legs:'legs', greaves:'legs' }[k] || k;
+}
+
+// ── STATE ──
+let allArmor   = [];
+let allWeapons = [];
+let allDecos   = [];
+let skillMap   = {};
+let activeSlot = null;
+let slotFilter = null;
+let activeMantleSlot = null;
+let searchMode = 'armor'; // 'armor' | 'weapon'
+
+// Filter state
+let filterRarities    = new Set([5,6,7,8]);
+let filterSkillId     = '';
+let filterMinSlotSize = 0;
+let filterElement     = '';
+let filterMinAffinity = -999;
+let sortMode          = 'name';
+
+// Build state
+let build = { head:null, chest:null, gloves:null, waist:null, legs:null };
+let upgrades   = { head:0, chest:0, gloves:0, waist:0, legs:0 };
+let transcended = { head:false, chest:false, gloves:false, waist:false, legs:false };
+let weapon  = null;
+let weapon2 = null; // Sekundärwaffe – zählt nicht für Stats/Skills/Decos
+
+// Transcendence bonus defense by rarity
+const TRANSCEND_BONUS = { 5:16, 6:12, 7:10, 8:8 };
+let talisman = { skill1id:null, skill1lv:1, skill2id:null, skill2lv:1, slots:[] };
+let mantles  = { 1: null, 2: null };
+let equippedDecos = {};
+let decoPickerTarget = null;
+
+// ── FETCH ──
+async function fetchAll(path) {
+  let all = [], offset = 0;
+  while (true) {
+    const r = await fetch(`${API}/${path}?limit=100&offset=${offset}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    if (!d?.length) break;
+    all = all.concat(d);
+    if (d.length < 100) break;
+    offset += 100;
+  }
+  return all;
+}
+
+async function init() {
+  const list = document.getElementById('armor-list');
+  list.innerHTML = '<div class="loading-wrap"><div class="spinner"></div><span>Lade Daten…</span></div>';
+  try {
+    const [armor, decos, skills, weapons] = await Promise.all([
+      fetchAll('armor'),
+      fetchAll('decorations'),
+      fetchAll('skills'),
+      fetchAll('weapons')
+    ]);
+    allArmor = armor.map(a => ({ ...a, kind: normalizeKind(a.kind) }));
+    allDecos = decos;
+    allWeapons = weapons.map(w => ({ ...w, kindNorm: normalizeWeaponType(w.type || w.kind || '') }));
+    skills.forEach(s => { skillMap[s.id] = s; });
+    populateTalismanSelects();
+    populateSkillFilter();
+    renderArmorList();
+    renderMantleList();
+  } catch(e) {
+    list.innerHTML = `<div class="err">Fehler: ${e.message}<br><small>Internetverbindung prüfen und neu laden.</small></div>`;
+  }
+}
+
+// ── TABS ──
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === id));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('vis', p.id === 'panel-' + id));
+  if (id === 'overview') renderOverview();
+}
+
+// ── SKILL FILTER POPULATE ──
+function populateSkillFilter() {
+  const sel = document.getElementById('filter-skill');
+  if (!sel) return;
+  const skills = Object.values(skillMap).sort((a,b) => a.name.localeCompare(b.name));
+  sel.innerHTML = '<option value="">Alle Skills</option>' +
+    skills.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+}
+
+// ── FILTER CONTROLS ──
+function toggleRarity(r, btn) {
+  if (filterRarities.has(r)) { filterRarities.delete(r); btn.classList.remove('on'); btn.classList.add('off'); }
+  else { filterRarities.add(r); btn.classList.add('on'); btn.classList.remove('off'); }
+  applyFilters();
+}
+
+function setSort(mode, btn) {
+  sortMode = mode;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('sort-stat').textContent = searchMode === 'weapon' ? 'ATK ↓' : 'DEF ↓';
+  applyFilters();
+}
+
+function applyFilters() {
+  filterSkillId     = document.getElementById('filter-skill')?.value || '';
+  filterMinSlotSize = parseInt(document.getElementById('filter-slots')?.value || '0');
+  filterElement     = document.getElementById('filter-element')?.value || '';
+  filterMinAffinity = parseInt(document.getElementById('filter-affinity')?.value ?? '-999');
+  renderArmorList();
+}
+
+// ── SLOT FILTER ──
+function setSlotFilter(kind, btn) {
+  searchMode = 'armor';
+  slotFilter = kind;
+  document.querySelectorAll('.sf-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('armor-filters').style.display = 'flex';
+  document.getElementById('weapon-filters').style.display = 'none';
+  document.getElementById('weapon-type-grid').style.display = 'none';
+  document.getElementById('search-title').textContent = 'Rüstung durchsuchen';
+  document.getElementById('sort-stat').textContent = 'DEF ↓';
+  applyFilters();
+}
+
+// ── WEAPON MODE ──
+function setWeaponMode(btn) {
+  searchMode = 'weapon';
+  activeSlot = null;
+  slotFilter = null;
+  document.querySelectorAll('.sf-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('armor-filters').style.display = 'none';
+  document.getElementById('weapon-filters').style.display = 'flex';
+  document.getElementById('weapon-type-grid').style.display = 'grid';
+  document.getElementById('search-title').textContent = 'Waffe wählen — Sword & Shield';
+  document.getElementById('sort-stat').textContent = 'ATK ↓';
+  document.getElementById('armor-hint').style.display = 'none';
+  applyFilters();
+}
+
+let selectedWeaponType = 'sword-shield';
+
+const WEAPON_TYPE_NORMALIZE = {
+  'swordshield':'sword-shield','swordandshield':'sword-shield','sns':'sword-shield',
+  'dualblades':'dual-blades','dualblade':'dual-blades','db':'dual-blades',
+  'greatsword':'great-sword','gs':'great-sword',
+  'longsword':'long-sword','ls':'long-sword',
+  'hammer':'hammer',
+  'huntinghorn':'hunting-horn','hh':'hunting-horn',
+  'lance':'lance',
+  'gunlance':'gunlance','gl':'gunlance',
+  'switchaxe':'switch-axe','sa':'switch-axe',
+  'chargeblade':'charge-blade','cb':'charge-blade',
+  'insectglaive':'insect-glaive','ig':'insect-glaive',
+  'lightbowgun':'light-bowgun','lbg':'light-bowgun',
+  'heavybowgun':'heavy-bowgun','hbg':'heavy-bowgun',
+  'bow':'bow'
+};
+
+function normalizeWeaponType(raw) {
+  const k = (raw||'').toLowerCase().replace(/[\s_]/g,'-');
+  // try direct match first
+  if (Object.values(WEAPON_TYPE_NORMALIZE).includes(k)) return k;
+  // try stripped
+  const stripped = k.replace(/-/g,'');
+  return WEAPON_TYPE_NORMALIZE[stripped] || k;
+}
+
+function setWeaponType(type, btn) {
+  selectedWeaponType = type;
+  document.querySelectorAll('.wt-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  const names = { 'sword-shield':'Sword & Shield','dual-blades':'Dual Blades','great-sword':'Greatsword','long-sword':'Longsword','hammer':'Hammer','hunting-horn':'Hunting Horn','lance':'Lance','gunlance':'Gunlance','switch-axe':'Switch Axe','charge-blade':'Charge Blade','insect-glaive':'Insect Glaive','light-bowgun':'Light Bowgun','heavy-bowgun':'Heavy Bowgun','bow':'Bow' };
+  const label = names[type] || type;
+  document.getElementById('search-title').textContent =
+    weaponTarget === 'secondary' ? `Sekundärwaffe wählen — ${label}` : `Hauptwaffe wählen — ${label}`;
+  applyFilters();
+}
+
+function pickWeapon(target) {
+  weaponTarget = target || 'primary';
+  searchMode = 'weapon';
+  activeSlot = null;
+  document.querySelectorAll('.sf-btn').forEach(b => b.classList.toggle('on', b.id === 'weapon-filter-btn'));
+  document.getElementById('armor-filters').style.display = 'none';
+  document.getElementById('weapon-filters').style.display = 'flex';
+  document.getElementById('weapon-type-grid').style.display = 'grid';
+  const names = { 'sword-shield':'Sword & Shield','dual-blades':'Dual Blades','great-sword':'Greatsword','long-sword':'Longsword','hammer':'Hammer','hunting-horn':'Hunting Horn','lance':'Lance','gunlance':'Gunlance','switch-axe':'Switch Axe','charge-blade':'Charge Blade','insect-glaive':'Insect Glaive','light-bowgun':'Light Bowgun','heavy-bowgun':'Heavy Bowgun','bow':'Bow' };
+  const typeName = names[selectedWeaponType] || selectedWeaponType;
+  document.getElementById('search-title').textContent = weaponTarget === 'secondary'
+    ? `Sekundärwaffe — ${typeName}` : `Hauptwaffe — ${typeName}`;
+  document.getElementById('sort-stat').textContent = 'ATK ↓';
+  const hint = document.getElementById('armor-hint');
+  hint.style.display = 'block';
+  hint.innerHTML = weaponTarget === 'secondary'
+    ? `Tippe eine Waffe an → wird als <strong>Sekundärwaffe</strong> eingesetzt`
+    : `Tippe eine Waffe an → wird als <strong>Hauptwaffe</strong> eingesetzt`;
+  switchTab('search');
+  applyFilters();
+}
+
+function equipWeapon(id) {
+  const w = allWeapons.find(w => w.id === id);
+  if (!w) return;
+  if (weaponTarget === 'secondary') {
+    clearDecosForSlot('weapon2');
+    weapon2 = w;
+  } else {
+    clearDecosForSlot('weapon');
+    weapon = w;
+  }
+  document.getElementById('armor-hint').style.display = 'none';
+  renderBuild();
+  renderSkills();
+  renderDecoPanel();
+  switchTab('build');
+}
+
+function clearWeapon(e, target) {
+  e.stopPropagation();
+  if (target === 'secondary') {
+    clearDecosForSlot('weapon2');
+    weapon2 = null;
+  } else {
+    clearDecosForSlot('weapon');
+    weapon = null;
+  }
+  renderBuild();
+  renderSkills();
+  renderDecoPanel();
+}
+
+function swapWeapons() {
+  // Swap weapon objects
+  const tmp = weapon; weapon = weapon2; weapon2 = tmp;
+  // Swap their decos
+  const allKeys = Object.keys(equippedDecos);
+  const w1Decos = {}, w2Decos = {};
+  allKeys.forEach(k => {
+    if (k.startsWith('weapon2-')) w2Decos[k] = equippedDecos[k];
+    else if (k.startsWith('weapon-')) w1Decos[k] = equippedDecos[k];
+  });
+  // Remove old
+  [...Object.keys(w1Decos), ...Object.keys(w2Decos)].forEach(k => delete equippedDecos[k]);
+  // Re-add swapped
+  Object.entries(w1Decos).forEach(([k,v]) => { equippedDecos['weapon2' + k.slice(6)] = v; });
+  Object.entries(w2Decos).forEach(([k,v]) => { equippedDecos['weapon' + k.slice(7)] = v; });
+  renderBuild();
+  renderSkills();
+  renderDecoPanel();
+}
+
+
+// ── PDF EXPORT ──
+function exportPDF() {
+  // ── Stats ──
+  const totalDef = ARMOR_SLOTS.reduce((s,sl) => s + currentDef(sl), 0);
+  const RES_KEYS = ['fire','water','ice','thunder','dragon'];
+  const RES_DE   = { fire:'🔥 Fire', water:'💧 Water', ice:'❄️ Ice', thunder:'⚡ Thunder', dragon:'🐉 Dragon' };
+  const totalRes = {};
+  RES_KEYS.forEach(r => { totalRes[r] = ARMOR_SLOTS.reduce((s,sl) => s + (build[sl]?.resistances?.[r]||0), 0); });
+
+  // offense rows
+  const offRows = [];
+  if (weapon) {
+    offRows.push(`<div class="pd-row"><span class="pd-row-label">Angriff</span><span class="pd-row-val atk">${weapon.damage?.raw||weapon.damage?.display||'?'}</span></div>`);
+    const elem = (weapon.specials||[])[0];
+    if (elem) offRows.push(`<div class="pd-row"><span class="pd-row-label">${elem.element||'Element'}</span><span class="pd-row-val">${elem.damage?.raw||'?'}</span></div>`);
+    if (weapon.affinity) offRows.push(`<div class="pd-row"><span class="pd-row-label">Affinität</span><span class="pd-row-val">${weapon.affinity>0?'+':''}${weapon.affinity}%</span></div>`);
+  }
+
+  // defense rows
+  const defRows = [`<div class="pd-row"><span class="pd-row-label">Defense</span><span class="pd-row-val">${totalDef}</span></div>`];
+  RES_KEYS.forEach(r => {
+    const v = totalRes[r];
+    const cls = v >= 10 ? 'pos' : v < 0 ? 'neg' : '';
+    defRows.push(`<div class="pd-row"><span class="pd-row-label">${RES_DE[r]}</span><span class="pd-row-val ${cls}">${v>=0?'+':''}${v}</span></div>`);
+  });
+
+  // ── Skills ──
+  const totals = collectSkills();
+  const skillEntries = Object.entries(totals).sort((a,b) => b[1].level - a[1].level);
+  const skillRows = skillEntries.map(([,{name,level,max}]) =>
+    `<div class="pd-skill-row"><span class="pd-skill-name">${name}</span><span class="pd-skill-lv">Lv${Math.min(level,max)}${level>max?'!':''}</span></div>`
+  ).join('');
+
+  // ── Equipment ──
+  const equipRows = [];
+  if (weapon) equipRows.push(`<div class="pd-equip-row"><span class="pd-equip-label">Hauptwaffe</span><span class="pd-equip-name">${weapon.name}</span><span class="pd-equip-sub">ATK ${weapon.damage?.raw||'?'}${weapon.affinity?` · ${weapon.affinity>0?'+':''}${weapon.affinity}%`:''}</span></div>`);
+  if (weapon2) equipRows.push(`<div class="pd-equip-row"><span class="pd-equip-label">Sekundär</span><span class="pd-equip-name">${weapon2.name}</span><span class="pd-equip-sub">ATK ${weapon2.damage?.raw||'?'}</span></div>`);
+  ARMOR_SLOTS.forEach(sl => {
+    if (!build[sl]) return;
+    const upg = upgrades[sl]||0;
+    const tr  = transcended[sl];
+    const def = currentDef(sl);
+    equipRows.push(`<div class="pd-equip-row"><span class="pd-equip-label">${SLOT_DE[sl]||sl}</span><span class="pd-equip-name">${build[sl].name}</span><span class="pd-equip-sub">DEF ${def}${upg?` +${upg}`:''}${tr?' ✨':''}</span></div>`);
+  });
+  if (talisman.skill1id) {
+    const s1 = skillMap[talisman.skill1id]?.name||'';
+    const s2 = talisman.skill2id ? ` · ${skillMap[talisman.skill2id]?.name||''} Lv${talisman.skill2lv||1}` : '';
+    equipRows.push(`<div class="pd-equip-row"><span class="pd-equip-label">Talisman</span><span class="pd-equip-name">${s1} Lv${talisman.skill1lv||1}${s2}</span><span class="pd-equip-sub"></span></div>`);
+  }
+
+  // ── Deco farm list ──
+  const decoCount = {};
+  Object.values(equippedDecos).forEach(d => { decoCount[d.name] = (decoCount[d.name]||0) + 1; });
+  const decoRows = Object.entries(decoCount).sort((a,b)=>a[0].localeCompare(b[0])).map(([name,cnt]) =>
+    `<div class="pd-deco-item"><span class="pd-deco-cnt">${cnt}×</span><span class="pd-deco-name">${name}</span></div>`
+  ).join('');
+
+  const buildName = (() => { try { return JSON.parse(localStorage.getItem('mhw-builds')||'[]')[0]?.name||'Build'; } catch { return 'Build'; } })();
+
+  document.getElementById('print-doc').innerHTML = `
+    <div class="pd-header">
+      <div>
+        <div class="pd-title">⚔️ MH Wilds · Build Planner</div>
+        <div class="pd-sub">Annariel · HR 136 · Sword &amp; Shield</div>
+      </div>
+      <div class="pd-sub" style="text-align:right;font-weight:600;color:#8B6914">${buildName}</div>
+    </div>
+
+    <div class="pd-cols">
+      <div class="pd-col">
+        ${weapon ? `<div class="pd-section"><div class="pd-section-title">⚔️ Offense — ${weapon.name}</div>${offRows.join('')}</div>` : ''}
+        <div class="pd-section"><div class="pd-section-title">🛡️ Defense</div>${defRows.join('')}</div>
+      </div>
+      <div class="pd-col">
+        <div class="pd-section"><div class="pd-section-title">✨ Aktive Skills</div><div class="pd-skills-grid">${skillRows}</div></div>
+      </div>
+    </div>
+
+    <div class="pd-section"><div class="pd-section-title">🎽 Equipment</div>${equipRows.join('')}</div>
+    ${decoRows ? `<div class="pd-section"><div class="pd-section-title">💎 Dekorationen (Farmliste)</div><div class="pd-deco-grid">${decoRows}</div></div>` : ''}
+  `;
+
+  window.print();
+}
+const SAVES_KEY = 'mhw-builds';
+
+function getSaves() {
+  try { return JSON.parse(localStorage.getItem(SAVES_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function putSaves(saves) {
+  localStorage.setItem(SAVES_KEY, JSON.stringify(saves));
+}
+
+function buildSnapshot() {
+  return {
+    weapon:     weapon  ? { id: weapon.id  } : null,
+    weapon2:    weapon2 ? { id: weapon2.id } : null,
+    build:      Object.fromEntries(ARMOR_SLOTS.map(s => [s, build[s] ? { id: build[s].id } : null])),
+    upgrades:   { ...upgrades },
+    transcended:{ ...transcended },
+    talisman:   { ...talisman },
+    mantles:    { 1: mantles[1]?.name||null, 2: mantles[2]?.name||null },
+    decos:      Object.fromEntries(Object.entries(equippedDecos).map(([k,d]) => [k, d.id]))
+  };
+}
+
+function restoreSnapshot(snap) {
+  weapon  = snap.weapon  ? allWeapons.find(w => w.id === snap.weapon.id)  || null : null;
+  weapon2 = snap.weapon2 ? allWeapons.find(w => w.id === snap.weapon2.id) || null : null;
+  ARMOR_SLOTS.forEach(s => {
+    const id = snap.build?.[s]?.id;
+    build[s] = id ? allArmor.find(a => a.id === id) || null : null;
+  });
+  upgrades    = { ...snap.upgrades };
+  transcended = { ...snap.transcended };
+  talisman    = { ...snap.talisman };
+  const MANTLE_LIST = getAllMantles();
+  mantles[1] = snap.mantles?.[1] ? { name: snap.mantles[1] } : null;
+  mantles[2] = snap.mantles?.[2] ? { name: snap.mantles[2] } : null;
+  equippedDecos = {};
+  Object.entries(snap.decos || {}).forEach(([k, id]) => {
+    const d = allDecos.find(d => d.id === id);
+    if (d) equippedDecos[k] = d;
+  });
+}
+
+function getAllMantles() {
+  // reuse the mantles list from the rendered mantle tab
+  return window._mantleList || [];
+}
+
+function openSaves() {
+  renderSavesList();
+  document.getElementById('save-name-input').value = '';
+  document.getElementById('saves-overlay').style.display = 'flex';
+}
+
+function closeSaves(e) {
+  if (e && e.target !== document.getElementById('saves-overlay')) return;
+  document.getElementById('saves-overlay').style.display = 'none';
+}
+
+function renderSavesList() {
+  const saves = getSaves();
+  const el = document.getElementById('saves-list');
+  if (saves.length === 0) {
+    el.innerHTML = '<div class="empty">Noch keine Builds gespeichert.</div>';
+    return;
+  }
+  el.innerHTML = saves.map((s, i) => `
+    <div class="save-item">
+      <div>
+        <div class="save-item-name">${s.name}</div>
+        <div class="save-item-date">${s.date}</div>
+      </div>
+      <div class="save-item-btns">
+        <button class="save-load-btn" onclick="loadBuild(${i})">Laden</button>
+        <button class="save-del-btn" onclick="deleteBuild(${i})">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function saveCurrentBuild() {
+  const name = document.getElementById('save-name-input').value.trim();
+  if (!name) { showToast('Bitte einen Namen eingeben!'); return; }
+  const saves = getSaves();
+  const existing = saves.findIndex(s => s.name === name);
+  const entry = {
+    name,
+    date: new Date().toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }),
+    snap: buildSnapshot()
+  };
+  if (existing >= 0) saves[existing] = entry;
+  else saves.unshift(entry);
+  putSaves(saves);
+  renderSavesList();
+  document.getElementById('save-name-input').value = '';
+  showToast(`✓ „${name}" gespeichert`);
+}
+
+function loadBuild(idx) {
+  const saves = getSaves();
+  const entry = saves[idx];
+  if (!entry) return;
+  restoreSnapshot(entry.snap);
+  renderBuild();
+  renderSkills();
+  renderDecoPanel();
+  renderArmorList();
+  closeSaves();
+  showToast(`✓ „${entry.name}" geladen`);
+  switchTab('build');
+}
+
+function deleteBuild(idx) {
+  const saves = getSaves();
+  const name = saves[idx]?.name;
+  saves.splice(idx, 1);
+  putSaves(saves);
+  renderSavesList();
+  showToast(`„${name}" gelöscht`);
+}
+function toggleSkillAccordion(id) {
+  const item = document.getElementById('ski-' + id);
+  const acc  = document.getElementById('ska-' + id);
+  if (!item || !acc) return;
+  const isOpen = acc.classList.contains('open');
+  // close all others
+  document.querySelectorAll('.skill-accordion.open').forEach(a => { a.classList.remove('open'); });
+  document.querySelectorAll('.skill-item.open').forEach(a => { a.classList.remove('open'); });
+  if (!isOpen) {
+    acc.classList.add('open');
+    item.classList.add('open');
+    item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ── QUICK ADD ──
+function quickAddArmor(id) {
+  const piece = allArmor.find(a => a.id === id);
+  if (!piece) return;
+  const slot = piece.kind;
+  clearDecosForSlot(slot);
+  build[slot] = piece;
+  upgrades[slot] = 0;
+  transcended[slot] = false;
+  renderBuild();
+  renderSkills();
+  renderDecoPanel();
+  renderArmorList();
+  showToast(`✓ ${piece.name} eingesetzt`);
+}
+
+let wslotPendingId = null;
+function quickAddWeapon(id) {
+  const w = allWeapons.find(w => w.id === id);
+  if (!w) return;
+  if (!weapon) {
+    clearDecosForSlot('weapon');
+    weapon = w;
+    renderBuild(); renderSkills(); renderDecoPanel(); renderArmorList();
+    showToast(`✓ ${w.name} → Hauptwaffe`);
+    return;
+  }
+  wslotPendingId = id;
+  document.getElementById('wslot-name').textContent = w.name;
+  const btns = document.getElementById('wslot-btns');
+  btns.innerHTML = `
+    <button class="wslot-btn primary" onclick="wslotConfirm('swap')">⇄ Hauptslot ersetzen (${weapon.name} → Sekundär)</button>
+    <button class="wslot-btn" onclick="wslotConfirm('secondary')">⊕ Als Sekundärwaffe einsetzen</button>`;
+  document.getElementById('wslot-overlay').style.display = 'flex';
+}
+
+function wslotConfirm(action) {
+  const w = allWeapons.find(w => w.id === wslotPendingId);
+  if (!w) { closeWslot(); return; }
+  if (action === 'swap') {
+    clearDecosForSlot('weapon2');
+    weapon2 = weapon;
+    const keys = Object.keys(equippedDecos).filter(k => k.startsWith('weapon-') && !k.startsWith('weapon2'));
+    keys.forEach(k => { equippedDecos['weapon2' + k.slice(6)] = equippedDecos[k]; delete equippedDecos[k]; });
+    clearDecosForSlot('weapon');
+    weapon = w;
+    showToast(`✓ ${w.name} → Hauptwaffe`);
+  } else {
+    clearDecosForSlot('weapon2');
+    weapon2 = w;
+    showToast(`✓ ${w.name} → Sekundärwaffe`);
+  }
+  closeWslot();
+  renderBuild(); renderSkills(); renderDecoPanel(); renderArmorList();
+}
+
+function closeWslot(e) {
+  if (e && e.target !== document.getElementById('wslot-overlay')) return;
+  document.getElementById('wslot-overlay').style.display = 'none';
+  wslotPendingId = null;
+}
+function pickSlot(slot) {
+  activeSlot = slot;
+  slotFilter = slot;
+  document.getElementById('search-input').value = '';
+  document.querySelectorAll('.sf-btn').forEach((b,i) => {
+    b.classList.toggle('on', [null,'head','chest','gloves','waist','legs'][i] === slot);
+  });
+  renderArmorList();
+  switchTab('search');
+  const hint = document.getElementById('armor-hint');
+  hint.style.display = 'block';
+  hint.innerHTML = `Tippe ein Teil an → wird in <strong>${SLOT_DE[slot] || slot}</strong> eingesetzt`;
+}
+
+// ── EQUIP ARMOR ──
+function equipArmor(id) {
+  if (!activeSlot) return;
+  const piece = allArmor.find(a => a.id === id);
+  if (!piece || piece.kind !== activeSlot) return;
+  // Clear decos for this slot when piece changes
+  clearDecosForSlot(activeSlot);
+  build[activeSlot] = piece;
+  activeSlot = null;
+  document.getElementById('armor-hint').style.display = 'none';
+  renderBuild();
+  renderSkills();
+  renderDecoPanel();
+  switchTab('build');
+}
+
+function clearDecosForSlot(slot) {
+  Object.keys(equippedDecos).forEach(k => { if (k.startsWith(slot + '-')) delete equippedDecos[k]; });
+}
+
+// ── CLEAR ARMOR ──
+function clearSlot(slot, e) {
+  e.stopPropagation();
+  clearDecosForSlot(slot);
+  build[slot] = null;
+  upgrades[slot] = 0;
+  transcended[slot] = false;
+  if (activeSlot === slot) activeSlot = null;
+  renderBuild();
+  renderSkills();
+  renderDecoPanel();
+}
+
+// ── SLOT DISPLAY HELPERS ──
+const SLOT_CIRCLES = ['', '①', '②', '③'];
+const SLOT_COLORS  = { 1: 'var(--text)', 2: 'var(--teal)', 3: 'var(--gold)' };
+
+function slotCircle(size) {
+  const s = Math.min(3, Math.max(1, size));
+  return `<span style="color:${SLOT_COLORS[s]};font-size:.85em">${SLOT_CIRCLES[s]}</span>`;
+}
+
+function slotsHtml(slots) {
+  if (!slots || slots.length === 0) return '';
+  return ' ' + slots.map(s => slotCircle(s)).join('');
+}
+
+function slotsHtmlInline(slots) {
+  if (!slots || slots.length === 0) return '';
+  return slots.map(s => slotCircle(s)).join(' ');
+}
+
+// Get effective slots for a piece considering transcendence
+function effectiveSlots(slot) {
+  const piece = build[slot];
+  if (!piece) return [];
+  const base = piece.slots || [];
+  if (!transcended[slot]) return base;
+  const r = piece.rarity;
+  if (r === 5) return base.map((s,i) => i < 3 ? Math.min(3, s+1) : s);
+  if (r === 6) return base.map((s,i) => i < 2 ? Math.min(3, s+1) : s);
+  return base;
+}
+function normalMax(piece) {
+  if (!piece) return 0;
+  return Math.round(((piece.defense?.max||piece.defense?.base||0) - (piece.defense?.base||0)) / 2);
+}
+function transcMax(piece) {
+  if (!piece) return 0;
+  return normalMax(piece) + Math.round((TRANSCEND_BONUS[piece.rarity]||0) / 2);
+}
+function maxUpgrades(piece) { return transcMax(piece); }
+function currentDef(slot) {
+  const p = build[slot]; if (!p) return 0;
+  return (p.defense?.base||0) + (upgrades[slot]||0) * 2;
+}
+function changeUpgrade(slot, delta, e) {
+  e.stopPropagation();
+  const piece = build[slot]; if (!piece) return;
+  const cap = transcended[slot] ? transcMax(piece) : normalMax(piece);
+  upgrades[slot] = Math.max(0, Math.min(cap, (upgrades[slot]||0) + delta));
+  renderBuild();
+}
+function toggleTranscend(slot, e) {
+  e.stopPropagation();
+  transcended[slot] = !transcended[slot];
+  // If toggling off and upgrades exceed normal max, cap them
+  if (!transcended[slot]) {
+    const nm = normalMax(build[slot]);
+    if ((upgrades[slot]||0) > nm) upgrades[slot] = nm;
+  }
+  renderBuild();
+}
+function pickMantle(n) {
+  activeMantleSlot = n;
+  document.getElementById('mantle-pick-title').textContent = `Mantel ${n} wählen`;
+  switchTab('mantle');
+}
+
+const MANTLES = [
+  'Rocksteady Mantle','Temporal Mantle','Evasion Mantle','Immunity Mantle',
+  'Ghillie Mantle','Mending Mantle','Challenger Mantle','Vitality Mantle',
+  'Fireproof Mantle','Waterproof Mantle','Thunderproof Mantle','Iceproof Mantle',
+  'Dragonproof Mantle','Corrupted Mantle','Glider Mantle','Impact Mantle',
+  'Apothecary Mantle','Banishing Ball'
+];
+
+function renderMantleList() {
+  const equipped1 = mantles[1]?.name;
+  const equipped2 = mantles[2]?.name;
+  document.getElementById('mantle-list').innerHTML = MANTLES.map(name => {
+    const eq = (name === equipped1 || name === equipped2);
+    return `<div class="mantle-item ${eq?'equipped':''}" onclick="equipMantle('${name}')">${name}</div>`;
+  }).join('');
+}
+
+function equipMantle(name) {
+  mantles[activeMantleSlot] = { name };
+  renderBuild();
+  renderMantleList();
+  switchTab('build');
+}
+
+function clearMantle(n, e) {
+  e.stopPropagation();
+  mantles[n] = null;
+  renderBuild();
+  renderMantleList();
+}
+
+// ── TALISMAN ──
+function populateTalismanSelects() {
+  const skills = Object.values(skillMap).sort((a,b) => a.name.localeCompare(b.name));
+  ['tali-skill1','tali-skill2'].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = '<option value="">— kein Skill —</option>' +
+      skills.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  });
+}
+
+function saveTalisman() {
+  const s1id = parseInt(document.getElementById('tali-skill1').value) || null;
+  const s1lv = parseInt(document.getElementById('tali-level1').value) || 1;
+  const s2id = parseInt(document.getElementById('tali-skill2').value) || null;
+  const s2lv = parseInt(document.getElementById('tali-level2').value) || 1;
+  const slots = [
+    parseInt(document.getElementById('tali-slot1').value)||0,
+    parseInt(document.getElementById('tali-slot2').value)||0,
+    parseInt(document.getElementById('tali-slot3').value)||0,
+  ].filter(s => s > 0);
+  talisman = { skill1id: s1id, skill1lv: s1lv, skill2id: s2id, skill2lv: s2lv, slots };
+  renderBuild();
+  renderSkills();
+  renderDecoPanel();
+  switchTab('build');
+}
+
+function clearTalisman() {
+  talisman = { skill1id:null, skill1lv:1, skill2id:null, skill2lv:1, slots:[] };
+  Object.keys(equippedDecos).forEach(k => { if (k.startsWith('talisman-')) delete equippedDecos[k]; });
+  renderBuild();
+  renderSkills();
+  renderDecoPanel();
+}
+
+// ── RENDER BUILD ──
+function renderWeaponSlot(elId, w, target) {
+  const wEl = document.getElementById(elId);
+  const wContent = wEl.querySelector('.slot-content');
+  const wRight   = wEl.querySelector('.slot-right');
+  if (w) {
+    wEl.classList.add('filled');
+    const atk     = w?.damage?.raw || w?.damage?.display || '?';
+    const elem    = (w.specials||[])[0];
+    const elemStr = elem ? ` · <span class="weapon-elem">${elem.element||''} ${elem?.damage?.raw||elem?.damage?.display||''}</span>` : '';
+    const aff     = w.affinity ? ` · <span class="weapon-aff">${w.affinity>0?'+':''}${w.affinity}%</span>` : '';
+    const slotsStr= slotsHtml(w.slots||[]);
+    wContent.innerHTML = `<div class="slot-armor-name">${w.name}${slotsStr}</div><div class="slot-armor-skills"><span class="weapon-atk">ATK ${atk}</span>${elemStr}${aff}</div>`;
+    wRight.innerHTML   = `<button class="clear-btn" onclick="clearWeapon(event,'${target}')">✕</button>`;
+  } else {
+    wEl.classList.remove('filled');
+    wContent.innerHTML = `<div class="slot-empty">— Tippen zum Wählen —</div>`;
+    wRight.innerHTML   = '';
+  }
+}
+
+function renderBuild() {
+  renderWeaponSlot('slot-weapon',  weapon,  'primary');
+  renderWeaponSlot('slot-weapon2', weapon2, 'secondary');
+
+  // Armor slots
+  ARMOR_SLOTS.forEach(slot => {
+    const piece  = build[slot];
+    const el     = document.getElementById('slot-' + slot);
+    const top    = el.querySelector('.build-slot-top');
+    const content= el.querySelector('.slot-content');
+    const right  = el.querySelector('.slot-right');
+    const upgRow = document.getElementById('upg-' + slot);
+
+    el.className = 'build-slot' + (piece?' filled':'') + (activeSlot===slot?' active-slot':'');
+
+    if (piece) {
+      const nm      = normalMax(piece);
+      const tm      = transcMax(piece);
+      const isT     = transcended[slot];
+      const upg     = upgrades[slot]||0;
+      const cap     = isT ? tm : nm;
+      const def     = currentDef(slot);
+      const effSlots = effectiveSlots(slot);
+      const skills  = (piece.skills||[]).map(sr=>`${sName(sr)} Lv${sr.level}`).join(' · ');
+      const slotsStr = slotsHtml(effSlots);
+      content.innerHTML = `<div class="slot-armor-name">${piece.name}${slotsStr}</div><div class="slot-armor-skills">${skills}</div>`;
+      right.innerHTML   = `<button class="clear-btn" onclick="clearSlot('${slot}',event)">✕</button>`;
+
+      // Progress bar: gold = normal, bright gold = transcended extra
+      const pctN = tm > 0 ? Math.min(upg, nm) / tm * 100 : 0;
+      const pctT = tm > 0 && isT ? Math.max(0, upg - nm) / tm * 100 : 0;
+      const upgLabel = `+${upg} / ${cap}`;
+
+      upgRow.style.display = 'flex';
+      upgRow.style.flexDirection = 'column';
+      upgRow.style.gap = '0';
+      upgRow.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:4px">
+          <button class="upg-btn" onclick="changeUpgrade('${slot}',-1,event)">−</button>
+          <div class="upg-info">
+            <div class="upg-def">DEF ${def}</div>
+            <div class="upg-level">${upgLabel} Aufwertungen</div>
+            <div class="upg-bar">
+              <div class="upg-bar-fill" style="width:${pctN}%;background:var(--gold-dim)"></div>
+              <div class="upg-bar-fill" style="width:${pctT}%;background:var(--gold-light)"></div>
+            </div>
+          </div>
+          <button class="upg-btn" onclick="changeUpgrade('${slot}',1,event)">+</button>
+        </div>
+        <div class="transc-row">
+          <button class="transc-btn ${isT?'on':''}" onclick="toggleTranscend('${slot}',event)">
+            ✨ Transzendieren ${isT ? '(aktiv · +'+Math.round((TRANSCEND_BONUS[piece.rarity]||0)/2)+' Stufen)' : '(+'+Math.round((TRANSCEND_BONUS[piece.rarity]||0)/2)+' Stufen freischalten)'}
+          </button>
+        </div>`;
+    } else {
+      content.innerHTML = '<div class="slot-empty">— Tippen zum Wählen —</div>';
+      right.innerHTML   = '';
+      upgRow.style.display = 'none';
+      upgRow.innerHTML  = '';
+    }
+  });
+
+  // Talisman
+  const td = document.getElementById('talisman-display');
+  const tr = document.getElementById('talisman-right');
+  if (talisman.skill1id) {
+    const s1 = skillMap[talisman.skill1id]?.name || '?';
+    const s2 = talisman.skill2id ? ` · ${skillMap[talisman.skill2id]?.name||'?'} Lv${talisman.skill2lv}` : '';
+    const slots = slotsHtml(talisman.slots);
+    td.innerHTML = `<div class="slot-armor-name">${s1} Lv${talisman.skill1lv}${s2}${slots}</div>`;
+    tr.innerHTML = `<button class="clear-btn" onclick="clearTalisman()">✕</button>`;
+    document.getElementById('slot-talisman').classList.add('filled');
+  } else {
+    td.innerHTML = '<div class="slot-empty">— Tippen zum Eingeben —</div>';
+    tr.innerHTML = '';
+    document.getElementById('slot-talisman').classList.remove('filled');
+  }
+
+  // Mantles
+  [1,2].forEach(n => {
+    const el      = document.getElementById('slot-mantle' + n);
+    const content = el.querySelector('.slot-content');
+    const right   = el.querySelector('.slot-right');
+    if (mantles[n]) {
+      el.classList.add('filled');
+      content.innerHTML = `<div class="slot-armor-name">${mantles[n].name}</div>`;
+      right.innerHTML   = `<button class="clear-btn" onclick="clearMantle(${n},event)">✕</button>`;
+    } else {
+      el.classList.remove('filled');
+      content.innerHTML = '<div class="slot-empty">— Tippen zum Wählen —</div>';
+      right.innerHTML   = '';
+    }
+  });
+
+  // Summary: total defense + resistances (no set boni here)
+  const totalDef = ARMOR_SLOTS.reduce((s,sl) => s + currentDef(sl), 0);
+  const RESIS_KEYS = ['fire','water','thunder','ice','dragon'];
+  const RESIS_ICONS = { fire:'🔥', water:'💧', thunder:'⚡', ice:'❄️', dragon:'🐉' };
+  const resisTotals = {};
+  RESIS_KEYS.forEach(k => { resisTotals[k] = 0; });
+  ARMOR_SLOTS.forEach(sl => {
+    const r = build[sl]?.resistances;
+    if (!r) return;
+    RESIS_KEYS.forEach(k => { resisTotals[k] += r[k]||0; });
+  });
+
+  let summary = '';
+  if (totalDef > 0) {
+    summary += `<div class="total-bar"><span class="total-bar-label">Gesamt-Defense</span><span class="total-bar-val">🛡 ${totalDef}</span></div>`;
+    const resisItems = RESIS_KEYS.map(k => {
+      const v = resisTotals[k];
+      const cls = v >= 20 ? 'great' : v >= 0 ? 'zero' : v >= -10 ? 'warn' : 'neg';
+      return `<div class="resis-item"><div class="resis-icon">${RESIS_ICONS[k]}</div><div class="resis-val ${cls}">${v>0?'+':''}${v}</div></div>`;
+    }).join('');
+    summary += `<div class="resis-bar"><div class="resis-title">Resistenzen</div><div class="resis-row">${resisItems}</div></div>`;
+  }
+  document.getElementById('build-summary').innerHTML = summary;
+}
+
+// ── DECO PANEL ──
+function renderDecoPanel() {
+  const container = document.getElementById('decos-content');
+  const pieces = [];
+
+  // Weapon (nur Hauptwaffe zählt für Skills, aber beide haben Deco-Slots)
+  if (weapon && (weapon.slots||[]).length > 0) {
+    pieces.push({ key:'weapon', name: weapon.name, label:'Hauptwaffe', slots: weapon.slots });
+  }
+  if (weapon2 && (weapon2.slots||[]).length > 0) {
+    pieces.push({ key:'weapon2', name: weapon2.name, label:'Sekundärwaffe', slots: weapon2.slots });
+  }
+
+  // Armor pieces
+  ARMOR_SLOTS.forEach(slot => {
+    const p = build[slot];
+    if (!p) return;
+    const slots = effectiveSlots(slot);
+    if (slots.length === 0) return;
+    pieces.push({ key: slot, name: p.name, label: SLOT_DE[slot]||slot, slots });
+  });
+
+  // Talisman
+  if (talisman.skill1id && talisman.slots.length > 0) {
+    const s1 = skillMap[talisman.skill1id]?.name || '?';
+    pieces.push({ key:'talisman', name: s1 + (talisman.skill2id ? ' +' : ''), label:'Talisman', slots: talisman.slots });
+  }
+
+  if (pieces.length === 0) {
+    container.innerHTML = '<div class="empty">Keine Rüstungsteile mit Deko-Slots angelegt.</div>';
+    return;
+  }
+
+  container.innerHTML = pieces.map(piece => {
+    const slotRows = piece.slots.map((size, idx) => {
+      const key = piece.key + '-' + idx;
+      const deco = equippedDecos[key];
+      const btnClass = deco ? 'deco-slot-btn filled' : 'deco-slot-btn';
+      const btnContent = deco
+        ? `<span>${(deco.skills||[]).map(sr=>`${sName(sr)} Lv${sr.level}`).join(' · ')}<span style="font-size:.65rem;color:var(--text-dim);margin-left:5px">${deco.name}</span></span><span class="deco-remove" onclick="removeDeco('${key}',event)">✕</span>`
+        : `<span style="color:var(--text-dim);font-style:italic">— leer —</span>`;
+      return `<div class="deco-slot-row">
+        <div class="deco-slot-size">${slotCircle(size)}</div>
+        <button class="${btnClass}" onclick="openDecoPicker('${piece.key}',${idx},${size})">${btnContent}</button>
+      </div>`;
+    }).join('');
+
+    return `<div class="deco-piece">
+      <div class="deco-piece-header">
+        <span class="deco-piece-name">${piece.name}</span>
+        <span class="deco-piece-label">${piece.label}</span>
+      </div>
+      <div class="deco-slots">${slotRows}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── DECO PICKER ──
+function openDecoPicker(pieceKey, slotIdx, maxSize) {
+  const isWeapon = pieceKey === 'weapon' || pieceKey === 'weapon2';
+  decoPickerTarget = { pieceKey, slotIdx, maxSize, isWeapon };
+  document.getElementById('deco-search').value = '';
+  decoCategory = '';
+  document.querySelectorAll('.deco-cat-btn').forEach(b => b.classList.toggle('on', b.dataset.cat === ''));
+  document.getElementById('deco-picker-title').textContent = `Slot [${maxSize}] — Dekoration wählen`;
+  renderDecoList();
+  document.getElementById('deco-picker').classList.add('vis');
+}
+
+function closeDecoPicker(e) {
+  if (e && e.target !== document.getElementById('deco-picker')) return;
+  document.getElementById('deco-picker').classList.remove('vis');
+  decoPickerTarget = null;
+}
+
+let decoCategory = ''; // '' = alle, 'offense', 'defense', 'utility'
+
+function setDecoCat(cat, btn) {
+  decoCategory = cat;
+  document.querySelectorAll('.deco-cat-btn').forEach(b => b.classList.toggle('on', b.dataset.cat === cat));
+  renderDecoList();
+}
+
+function renderDecoList() {
+  if (!decoPickerTarget) return;
+  const q = (document.getElementById('deco-search').value || '').toLowerCase();
+  const maxSize = decoPickerTarget.maxSize;
+
+  const filtered = allDecos.filter(d => {
+    const size = d.slot || d.level || 1;
+    const fits = size <= maxSize;
+    const skillNames = (d.skills||[]).map(sr => sName(sr).toLowerCase()).join(' ');
+    const matches = !q || d.name.toLowerCase().includes(q) || skillNames.includes(q);
+    const catMatches = !decoCategory || (d.skills||[]).some(sr => {
+      const sid = sr.skill?.id;
+      return sid && skillMap[sid]?.icon?.kind === decoCategory;
+    });
+    const dualOk = (d.skills||[]).length <= 1 || decoPickerTarget.isWeapon;
+    return fits && matches && catMatches && dualOk;
+  }).sort((a,b) => {
+    const aName = sName((a.skills||[])[0]) || a.name;
+    const bName = sName((b.skills||[])[0]) || b.name;
+    return (b.slot||b.level||1) - (a.slot||a.level||1) || aName.localeCompare(bName);
+  });
+
+  const list = document.getElementById('deco-list');
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty">Keine passenden Dekorationen.</div>';
+    return;
+  }
+  list.innerHTML = filtered.map(d => {
+    const size = d.slot || d.level || 1;
+    const skillText = (d.skills||[]).map(sr => `${sName(sr)} Lv${sr.level}`).join(' · ');
+    return `<div class="deco-item" onclick="equipDeco(${d.id})">
+      <div class="deco-item-size">${slotCircle(size)}</div>
+      <div class="deco-item-info">
+        <div class="deco-item-name">${skillText}</div>
+        <div class="deco-item-skill">${d.name}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function equipDeco(id) {
+  if (!decoPickerTarget) return;
+  const deco = allDecos.find(d => d.id === id);
+  if (!deco) return;
+  const key = decoPickerTarget.pieceKey + '-' + decoPickerTarget.slotIdx;
+  equippedDecos[key] = deco;
+  document.getElementById('deco-picker').classList.remove('vis');
+  decoPickerTarget = null;
+  renderDecoPanel();
+  renderSkills();
+}
+
+function removeDeco(key, e) {
+  e.stopPropagation();
+  delete equippedDecos[key];
+  renderDecoPanel();
+  renderSkills();
+}
+
+// ── SKILL NAME ──
+function sName(sr) {
+  return skillMap[sr.skill?.id]?.name || sr.skill?.name || '?';
+}
+
+// ── RENDER LIST ──
+function filterArmor() { applyFilters(); }
+
+function renderArmorList() {
+  const q    = (document.getElementById('search-input')?.value||'').toLowerCase();
+  const list = document.getElementById('armor-list');
+
+  if (searchMode === 'weapon') {
+    let filtered = allWeapons.filter(w => {
+      if (w.kindNorm !== selectedWeaponType) return false;
+      if (!filterRarities.has(w.rarity||0)) return false;
+      if (q && !w.name.toLowerCase().includes(q)) return false;
+      if (filterElement === 'none' && (w.specials||[]).length > 0) return false;
+      if (filterElement && filterElement !== 'none') {
+        if (!(w.specials||[]).some(s => s.element === filterElement)) return false;
+      }
+      if (filterMinAffinity > -999 && (w.affinity||0) < filterMinAffinity) return false;
+      if (filterMinSlotSize > 0 && !(w.slots||[]).some(s => s >= filterMinSlotSize)) return false;
+      return true;
+    });
+    filtered.sort((a,b) => {
+      if (sortMode === 'stat')   return (b.damage?.raw||0) - (a.damage?.raw||0);
+      if (sortMode === 'rarity') return (b.rarity||0) - (a.rarity||0);
+      return a.name.localeCompare(b.name);
+    });
+    if (filtered.length === 0) { list.innerHTML = '<div class="empty">Keine Treffer.</div>'; return; }
+    list.innerHTML = filtered.map(w => {
+      const atk     = w.damage?.raw || w.damage?.display || '?';
+      const elem    = (w.specials||[])[0];
+      const elemStr = elem ? `<span class="weapon-elem">${elem.element||''} ${elem?.damage?.raw||elem?.damage?.display||''}</span>` : '';
+      const aff     = w.affinity ? `<span class="weapon-aff">${w.affinity>0?'+':''}${w.affinity}%</span>` : '';
+      const slots   = (w.slots||[]).length > 0 ? slotsHtmlInline(w.slots) : '';
+      const isEq1   = weapon?.id === w.id;
+      const isEq2   = weapon2?.id === w.id;
+      return `<div class="armor-item ${isEq1||isEq2?'equipped':''}">
+        <div class="ai-info">
+          <div class="ai-name">${w.name}</div>
+          <div class="ai-meta">
+            <span class="def-val">ATK ${atk}</span>${elemStr}${aff}
+            ${slots?`<span>${slots}</span>`:''}
+            <span class="kind-badge">R${w.rarity||'?'}</span>
+          </div>
+        </div>
+        <button class="ai-add" onclick="quickAddWeapon(${w.id})">⊕</button>
+      </div>`;
+    }).join('');
+    return;
+  }
+
+  // Armor mode
+  const equippedIds = new Set(ARMOR_SLOTS.map(s => build[s]?.id).filter(Boolean));
+  let filtered = allArmor.filter(a => {
+    if (!filterRarities.has(a.rarity||0)) return false;
+    if (slotFilter && a.kind !== slotFilter) return false;
+    if (q && !a.name.toLowerCase().includes(q)) return false;
+    if (filterSkillId && !(a.skills||[]).some(sr => String(sr.skill?.id) === filterSkillId)) return false;
+    if (filterMinSlotSize > 0 && !(a.slots||[]).some(s => s >= filterMinSlotSize)) return false;
+    return true;
+  });
+  filtered.sort((a,b) => {
+    if (sortMode === 'stat')   return (b.defense?.base||0) - (a.defense?.base||0);
+    if (sortMode === 'rarity') return (b.rarity||0) - (a.rarity||0);
+    return a.name.localeCompare(b.name);
+  });
+  if (filtered.length === 0) { list.innerHTML = '<div class="empty">Keine Treffer.</div>'; return; }
+  list.innerHTML = filtered.map(piece => {
+    const wrong    = activeSlot && piece.kind !== activeSlot;
+    const equipped = equippedIds.has(piece.id);
+    const skills   = (piece.skills||[]).map(sr=>`${sName(sr)} ${sr.level}`).slice(0,3).join(' · ');
+    const slotsStr = (piece.slots||[]).length > 0 ? ` · ${slotsHtmlInline(piece.slots)}` : '';
+    return `<div class="armor-item ${equipped?'equipped':''} ${wrong?'dim':''}">
+      <div class="ai-info">
+        <div class="ai-name">${piece.name}</div>
+        <div class="ai-meta">
+          <span class="kind-badge">${SLOT_DE[piece.kind]||piece.kind}</span>
+          <span class="def-val">DEF ${piece.defense?.base??'—'}</span>
+          <span class="kind-badge">R${piece.rarity||'?'}</span>
+          <span>${skills}${slotsStr}</span>
+        </div>
+      </div>
+      <button class="ai-add" onclick="quickAddArmor(${piece.id})">⊕</button>
+    </div>`;
+  }).join('');
+}
+
+// ── RENDER OVERVIEW ──
+function renderOverview() {
+  const el = document.getElementById('overview-content');
+  const hasAnything = weapon || ARMOR_SLOTS.some(s => build[s]);
+  if (!hasAnything) {
+    el.innerHTML = '<div class="ov-empty">🐉 Noch kein Build angelegt.<br>Geh zur Schmiede und rüste dich aus!</div>';
+    return;
+  }
+
+  let html = '';
+
+  // ── OFFENSE ──
+  if (weapon) {
+    const atk  = weapon.damage?.raw || weapon.damage?.display || '?';
+    const elem = (weapon.specials||[])[0];
+    const aff  = weapon.affinity || 0;
+    html += `<div class="ov-section">
+      <div class="ov-section-title">⚔️ Offense — ${weapon.name}</div>
+      <div class="ov-row"><span class="ov-label">Angriff</span><span class="ov-val atk">${atk}</span></div>
+      ${elem ? `<div class="ov-row"><span class="ov-label">${elem.element||'Element'}</span><span class="ov-val elem">${elem.damage?.raw||elem.damage?.display||'?'}</span></div>` : ''}
+      <div class="ov-row"><span class="ov-label">Affinität</span><span class="ov-val aff">${aff>0?'+':''}${aff}%</span></div>
+    </div>`;
+  }
+
+  // ── DEFENSE + RESISTENZEN ──
+  const totalDef = ARMOR_SLOTS.reduce((s,sl) => s + currentDef(sl), 0);
+  const RESIS_KEYS = ['fire','water','thunder','ice','dragon'];
+  const RESIS_ICONS = { fire:'🔥', water:'💧', thunder:'⚡', ice:'❄️', dragon:'🐉' };
+  const resis = {};
+  RESIS_KEYS.forEach(k => { resis[k] = 0; });
+  ARMOR_SLOTS.forEach(sl => {
+    const r = build[sl]?.resistances; if (!r) return;
+    RESIS_KEYS.forEach(k => { resis[k] += r[k]||0; });
+  });
+  if (totalDef > 0) {
+    const resisRows = RESIS_KEYS.map(k => {
+      const v = resis[k];
+      const cls = v >= 20 ? 'great' : v >= 0 ? 'zero' : v >= -10 ? 'warn' : 'neg';
+      return `<div class="ov-row"><span class="ov-label">${RESIS_ICONS[k]} ${k.charAt(0).toUpperCase()+k.slice(1)}</span><span class="ov-val resis-val ${cls}">${v>0?'+':''}${v}</span></div>`;
+    }).join('');
+    html += `<div class="ov-section">
+      <div class="ov-section-title">🛡️ Defense</div>
+      <div class="ov-row"><span class="ov-label">Gesamt</span><span class="ov-val def">${totalDef}</span></div>
+      ${resisRows}
+    </div>`;
+  }
+
+  // ── ACTIVE SKILLS ──
+  const totals = {};
+  function addSk(id, name, level) {
+    const max = skillMap[id]?.ranks?.length || 7;
+    if (!totals[id]) totals[id] = { name, level:0, max };
+    totals[id].level = Math.min(totals[id].level + level, max);
+  }
+  (weapon?.skills||[]).forEach(sr => { const id=sr.skill?.id; if(id) addSk(id,sName(sr),sr.level||1); });
+  ARMOR_SLOTS.forEach(sl => { (build[sl]?.skills||[]).forEach(sr => { const id=sr.skill?.id; if(id) addSk(id,sName(sr),sr.level||1); }); });
+  if (talisman.skill1id) addSk(talisman.skill1id, skillMap[talisman.skill1id]?.name||'?', talisman.skill1lv);
+  if (talisman.skill2id) addSk(talisman.skill2id, skillMap[talisman.skill2id]?.name||'?', talisman.skill2lv);
+  Object.values(equippedDecos).forEach(d => { (d.skills||[]).forEach(sr => { const id=sr.skill?.id; if(id) addSk(id,sName(sr),sr.level||1); }); });
+
+  const skillList = Object.entries(totals).sort((a,b) => b[1].level-a[1].level || a[1].name.localeCompare(b[1].name));
+  if (skillList.length > 0) {
+    const skillItems = skillList.map(([id,s]) => {
+      const pips = Array.from({length:s.max},(_,i) =>
+        `<div class="ov-pip${i<s.level?' on':''}"></div>`).join('');
+      return `<div class="ov-skill-item"><span class="ov-skill-name">${s.name}</span><div class="ov-pips">${pips}</div></div>`;
+    }).join('');
+    html += `<div class="ov-section">
+      <div class="ov-section-title">✨ Aktive Skills</div>
+      <div class="ov-skills-grid">${skillItems}</div>
+    </div>`;
+  }
+
+  // ── SET BONI ──
+  const setCounts = {};
+  ARMOR_SLOTS.forEach(sl => { const name = build[sl]?.armorSet?.name; if (name) setCounts[name] = (setCounts[name]||0)+1; });
+  if (Object.keys(setCounts).length > 0) {
+    const setItems = Object.entries(setCounts).map(([name,count]) =>
+      `<div class="ov-set-item"><span class="ov-set-count">${count}×</span><span class="ov-set-name ${count>=2?'on':''}">${name}</span></div>`
+    ).join('');
+    html += `<div class="ov-section"><div class="ov-section-title">🏅 Set-Boni</div>${setItems}</div>`;
+  }
+
+  el.innerHTML = html;
+}
+function collectSkills() {
+  const totals = {};
+  function addSkill(id, name, level) {
+    const max = skillMap[id]?.ranks?.length || 7;
+    if (!totals[id]) totals[id] = { name, level:0, max };
+    totals[id].level += level;
+  }
+  (weapon?.skills||[]).forEach(sr => { const id=sr.skill?.id; if(id) addSkill(id,sName(sr),sr.level||1); });
+  ARMOR_SLOTS.forEach(slot => {
+    (build[slot]?.skills||[]).forEach(sr => { const id=sr.skill?.id; if(id) addSkill(id,sName(sr),sr.level||1); });
+  });
+  if (talisman.skill1id) addSkill(talisman.skill1id, skillMap[talisman.skill1id]?.name||'?', talisman.skill1lv);
+  if (talisman.skill2id) addSkill(talisman.skill2id, skillMap[talisman.skill2id]?.name||'?', talisman.skill2lv);
+  Object.values(equippedDecos).forEach(deco => {
+    (deco.skills||[]).forEach(sr => { const id=sr.skill?.id; if(id) addSkill(id,sName(sr),sr.level||1); });
+  });
+  return totals;
+}
+
+function renderSkills() {
+  const totals = collectSkills();
+
+  const container = document.getElementById('skills-list');
+  const entries = Object.entries(totals).sort((a,b) => b[1].level - a[1].level);
+  if (entries.length === 0) {
+    container.innerHTML = '<div class="empty">Noch keine Rüstung angelegt.</div>';
+    document.getElementById('set-bonus-list').innerHTML = '';
+    return;
+  }
+  container.innerHTML = entries.map(([id,{name,level,max}]) => {
+    const pipCount = Math.min(max, 7);
+    const pips = Array.from({length:pipCount}).map((_,i) =>
+      `<div class="pip ${i<level?(i<max?'on':'over'):''}"></div>`
+    ).join('');
+    const skill  = skillMap[id];
+    const ranks  = skill?.ranks || [];
+    const kindLabels = { offense:'⚔️ Offense', defense:'🛡️ Defense', utility:'🔧 Utility' };
+    const kindStr = skill?.icon?.kind ? `<span style="font-size:.62rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em">${kindLabels[skill.icon.kind]||skill.icon.kind}</span>` : '';
+    const rankRows = ranks.map(r =>
+      `<div class="skill-rank-row ${r.level <= level ? 'active' : ''}">
+        <span class="skill-rank-lv">Lv${r.level}</span>
+        <span class="skill-rank-desc">${r.description||'—'}</span>
+      </div>`).join('');
+    const descStr = skill?.description ? `<div class="skill-acc-desc">${skill.description}</div>` : '';
+    return `<div class="skill-item" id="ski-${id}" onclick="toggleSkillAccordion('${id}')">
+      <span class="skill-name">${name} ${kindStr}</span>
+      <div class="skill-right">
+        <div class="pips">${pips}</div>
+        <span class="skill-lv">Lv${Math.min(level,max)}${level>max?'!':''}</span>
+      </div>
+    </div>
+    <div class="skill-accordion" id="ska-${id}">
+      ${descStr}${rankRows}
+    </div>`;
+  }).join('');
+
+  // Set Boni
+  const setCounts = {};
+  ARMOR_SLOTS.forEach(sl => {
+    const name = build[sl]?.armorSet?.name;
+    if (name) setCounts[name] = (setCounts[name]||0)+1;
+  });
+  const setBonusEl = document.getElementById('set-bonus-list');
+  if (Object.keys(setCounts).length === 0) { setBonusEl.innerHTML = ''; return; }
+  const items = Object.entries(setCounts)
+    .sort((a,b) => b[1]-a[1])
+    .map(([name,count]) =>
+      `<div class="set-bonus-item ${count>=2?'on':''}">
+        <span class="set-bonus-count">(${count}×)</span>
+        <span>${name}</span>
+      </div>`
+    ).join('');
+  setBonusEl.innerHTML = `<div class="set-bonus-section">
+    <div class="set-bonus-title">Set-Boni</div>${items}
+  </div>`;
+}
+
+
+// ── START ──
+init();
+</script>
+  <!-- Saves Sheet -->
+  <div id="saves-overlay" class="saves-overlay" style="display:none" onclick="closeSaves(event)">
+    <div class="saves-sheet" onclick="event.stopPropagation()">
+      <div class="saves-head">
+        <span class="saves-head-title">💾 Gespeicherte Builds</span>
+        <button class="saves-close" onclick="closeSaves()">✕</button>
+      </div>
+      <div class="saves-new">
+        <input id="save-name-input" placeholder="Build-Name…" maxlength="40" autocorrect="off" spellcheck="false">
+        <button class="saves-new-btn" onclick="saveCurrentBuild()">Speichern</button>
+      </div>
+      <div class="saves-list" id="saves-list"></div>
+    </div>
+  </div>
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+  <!-- Weapon slot popup -->
+  <div id="wslot-overlay" class="wslot-overlay" style="display:none" onclick="closeWslot(event)">
+    <div class="wslot-sheet">
+      <div class="wslot-title">Waffe einsetzen</div>
+      <div class="wslot-name" id="wslot-name"></div>
+      <div class="wslot-btns" id="wslot-btns"></div>
+      <button class="wslot-cancel" onclick="closeWslot()">Abbrechen</button>
+    </div>
+  </div>
+</body>
+</html>
